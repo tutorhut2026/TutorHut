@@ -19,7 +19,7 @@ function buildNav(user) {
   const links = NAV_LINKS.map(p =>
     `<li class="nav-item"><a class="nav-link${cur === p.href ? " active" : ""}" href="${p.href}">${p.label}</a></li>`
   ).join("") +
-  `<li class="nav-item"><a class="nav-link text-muted" href="tutor-login.html" style="font-size:.85rem">Tutor Area</a></li>`;
+  `<li class="nav-item"><a class="nav-link text-muted" href="login.html" style="font-size:.85rem">Sign In</a></li>`;
 
   let authHtml;
   if (user) {
