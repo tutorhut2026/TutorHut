@@ -83,54 +83,59 @@ function setCellValue(sh, rowIdx, fieldName, value) {
 
 // ── DELETE Firebase Auth user (requires FIREBASE_SERVICE_ACCOUNT prop) ──
 
+function b64url(data) {
+  // base64url with no padding — required for valid JWTs
+  return Utilities.base64EncodeWebSafe(data).replace(/=+$/, '');
+}
+
 function deleteFirebaseAuthUser(uid) {
   try {
     var raw = PropertiesService.getScriptProperties().getProperty('FIREBASE_SERVICE_ACCOUNT');
     if (!raw) return false;
     var sa = JSON.parse(raw);
 
-    // Build a signed JWT for the service account
-    var now = Math.floor(Date.now() / 1000);
-    var header = Utilities.base64EncodeWebSafe(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
-    var claim  = Utilities.base64EncodeWebSafe(JSON.stringify({
+    // Build a signed JWT to exchange for an OAuth2 access token
+    var now     = Math.floor(Date.now() / 1000);
+    var header  = b64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
+    var payload = b64url(JSON.stringify({
       iss:   sa.client_email,
       sub:   sa.client_email,
       aud:   'https://oauth2.googleapis.com/token',
+      scope: 'https://www.googleapis.com/auth/cloud-platform',
       iat:   now,
-      exp:   now + 3600,
-      scope: 'https://www.googleapis.com/auth/firebase'
+      exp:   now + 3600
     }));
-    var signInput = header + '.' + claim;
-    var key  = sa.private_key;
-    var sig  = Utilities.base64EncodeWebSafe(
-      Utilities.computeRsaSha256Signature(signInput, key)
-    );
-    var jwt  = signInput + '.' + sig;
+    var toSign = header + '.' + payload;
+    var sig    = b64url(Utilities.computeRsaSha256Signature(toSign, sa.private_key));
+    var jwt    = toSign + '.' + sig;
 
-    // Exchange JWT for access token
+    // Exchange JWT for a Google OAuth2 access token
     var tokenRes = UrlFetchApp.fetch('https://oauth2.googleapis.com/token', {
       method: 'post',
       contentType: 'application/x-www-form-urlencoded',
-      payload: 'grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=' + jwt,
+      payload: 'grant_type=' + encodeURIComponent('urn:ietf:params:oauth:grant-type:jwt-bearer')
+             + '&assertion=' + encodeURIComponent(jwt),
       muteHttpExceptions: true
     });
     var tokenData = JSON.parse(tokenRes.getContentText());
     if (!tokenData.access_token) {
-      Logger.log('Firebase token error: ' + JSON.stringify(tokenData));
+      Logger.log('Firebase token error: ' + tokenRes.getContentText());
       return false;
     }
 
-    // Delete the user via Firebase Admin REST API
-    var projectId = sa.project_id;
+    // Delete the user via the Firebase Auth REST API (admin endpoint)
+    // Uses POST + {localId} body — same as what the Admin Node SDK calls internally
     var delRes = UrlFetchApp.fetch(
-      'https://identitytoolkit.googleapis.com/v1/projects/' + projectId + '/accounts/' + uid + ':delete',
+      'https://identitytoolkit.googleapis.com/v1/accounts:delete',
       {
-        method: 'delete',
+        method: 'post',
+        contentType: 'application/json',
         headers: { Authorization: 'Bearer ' + tokenData.access_token },
+        payload: JSON.stringify({ localId: uid }),
         muteHttpExceptions: true
       }
     );
-    Logger.log('Firebase Auth delete status: ' + delRes.getResponseCode());
+    Logger.log('Firebase Auth delete: ' + delRes.getResponseCode() + ' ' + delRes.getContentText());
     return delRes.getResponseCode() === 200;
   } catch (err) {
     Logger.log('deleteFirebaseAuthUser error: ' + err);
