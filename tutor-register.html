@@ -1,0 +1,309 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tutor Registration – TutorHut</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg sticky-top" id="site-navbar"></nav>
+
+<div class="page-header">
+  <div class="container">
+    <nav aria-label="breadcrumb"><ol class="breadcrumb mb-2"><li class="breadcrumb-item"><a href="index.html">Home</a></li><li class="breadcrumb-item active">Tutor Registration</li></ol></nav>
+    <h1>Apply to Become a Tutor</h1>
+    <p>Complete the form below. Our admin team will review your application and get back to you.</p>
+  </div>
+</div>
+
+<section class="section">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+
+        <!-- Sign-in banner -->
+        <div class="alert alert-light border d-flex align-items-center justify-content-between mb-4 py-3 px-4">
+          <span class="fw-600 small">Already have a tutor account?</span>
+          <a href="login.html?type=tutor" class="btn btn-primary btn-sm ms-3">
+            <i class="bi bi-box-arrow-in-right me-1"></i>Sign In
+          </a>
+        </div>
+
+        <!-- Info Alert -->
+        <div class="alert alert-info d-flex align-items-start gap-2 mb-4">
+          <i class="bi bi-info-circle-fill mt-1 flex-shrink-0"></i>
+          <div><strong>How it works:</strong> Submit your application with your details, qualifications, subjects and availability. Our admin team will review and approve or contact you within 3–5 working days.</div>
+        </div>
+
+        <form id="tutor-reg-form" class="th-form" data-firebase="true" novalidate>
+          <!-- Personal Details -->
+          <div class="form-section">
+            <div class="form-section-title"><i class="bi bi-person me-2"></i>Personal Details</div>
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <label class="form-label">First Name *</label>
+                <input id="t-fname" type="text" class="form-control" placeholder="e.g. Sarah" required />
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Last Name *</label>
+                <input id="t-lname" type="text" class="form-control" placeholder="e.g. Mitchell" required />
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Email Address *</label>
+                <input id="t-email" type="email" class="form-control" placeholder="you@example.com" required />
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Phone Number *</label>
+                <input id="t-phone" type="tel" class="form-control" placeholder="e.g. 07700 900000" required />
+              </div>
+              <div class="col-12">
+                <label class="form-label">Short Bio / Introduction *</label>
+                <textarea id="t-bio" class="form-control" rows="3" placeholder="Tell us a bit about yourself and your teaching approach..." required></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Qualifications -->
+          <div class="form-section">
+            <div class="form-section-title"><i class="bi bi-award me-2"></i>Qualifications &amp; Experience</div>
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <label class="form-label">Highest Qualification *</label>
+                <select id="t-qual" class="form-select" required>
+                  <option value="">Select qualification</option>
+                  <option>Bachelor's Degree (BSc / BA)</option>
+                  <option>Master's Degree (MSc / MA)</option>
+                  <option>PhD / Doctorate</option>
+                  <option>PGCE (Teaching Qualification)</option>
+                  <option>HND / HNC</option>
+                  <option>A-Levels</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Field of Study *</label>
+                <input id="t-field" type="text" class="form-control" placeholder="e.g. Mathematics, Physics" required />
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">University / Institution</label>
+                <input id="t-institution" type="text" class="form-control" placeholder="e.g. University of Manchester" />
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Years of Teaching Experience *</label>
+                <select id="t-exp" class="form-select" required>
+                  <option value="">Select experience</option>
+                  <option>Less than 1 year</option>
+                  <option>1–2 years</option>
+                  <option>3–5 years</option>
+                  <option>6–10 years</option>
+                  <option>10+ years</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Additional Qualifications / Certifications</label>
+                <textarea id="t-certs" class="form-control" rows="2" placeholder="Any teaching certifications, DBS checks, professional memberships..."></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Subjects -->
+          <div class="form-section">
+            <div class="form-section-title"><i class="bi bi-book me-2"></i>Subjects You Teach</div>
+            <label class="form-label mb-2">Select all subjects you can teach *</label>
+            <div class="subject-checkbox-group">
+              <label class="subject-check-label"><input type="checkbox" value="mathematics" />Mathematics</label>
+              <label class="subject-check-label"><input type="checkbox" value="further-maths" />Further Maths</label>
+              <label class="subject-check-label"><input type="checkbox" value="physics" />Physics</label>
+              <label class="subject-check-label"><input type="checkbox" value="chemistry" />Chemistry</label>
+              <label class="subject-check-label"><input type="checkbox" value="biology" />Biology</label>
+              <label class="subject-check-label"><input type="checkbox" value="science" />Combined Science</label>
+              <label class="subject-check-label"><input type="checkbox" value="english" />English Language</label>
+              <label class="subject-check-label"><input type="checkbox" value="english-lit" />English Literature</label>
+              <label class="subject-check-label"><input type="checkbox" value="history" />History</label>
+              <label class="subject-check-label"><input type="checkbox" value="geography" />Geography</label>
+              <label class="subject-check-label"><input type="checkbox" value="computing" />Computing / IT</label>
+              <label class="subject-check-label"><input type="checkbox" value="french" />French</label>
+              <label class="subject-check-label"><input type="checkbox" value="spanish" />Spanish</label>
+              <label class="subject-check-label"><input type="checkbox" value="german" />German</label>
+              <label class="subject-check-label"><input type="checkbox" value="art" />Art &amp; Design</label>
+              <label class="subject-check-label"><input type="checkbox" value="music" />Music</label>
+              <label class="subject-check-label"><input type="checkbox" value="economics" />Economics</label>
+              <label class="subject-check-label"><input type="checkbox" value="psychology" />Psychology</label>
+            </div>
+            <div class="mt-3">
+              <label class="form-label">Tuition Levels (select all that apply)</label>
+              <div class="subject-checkbox-group">
+                <label class="subject-check-label"><input type="checkbox" value="ks3" />KS3</label>
+                <label class="subject-check-label"><input type="checkbox" value="gcse" />GCSE</label>
+                <label class="subject-check-label"><input type="checkbox" value="alevel" />A-Level</label>
+                <label class="subject-check-label"><input type="checkbox" value="university" />University</label>
+                <label class="subject-check-label"><input type="checkbox" value="adult" />Adult Learning</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Availability -->
+          <div class="form-section">
+            <div class="form-section-title"><i class="bi bi-calendar3 me-2"></i>Availability</div>
+            <label class="form-label mb-2">Available Days *</label>
+            <div class="availability-grid mb-4">
+              <button type="button" class="day-btn">Monday</button>
+              <button type="button" class="day-btn">Tuesday</button>
+              <button type="button" class="day-btn">Wednesday</button>
+              <button type="button" class="day-btn">Thursday</button>
+              <button type="button" class="day-btn">Friday</button>
+              <button type="button" class="day-btn">Saturday</button>
+              <button type="button" class="day-btn">Sunday</button>
+            </div>
+            <label class="form-label mb-2">Available Time Slots *</label>
+            <div class="availability-grid mb-3">
+              <button type="button" class="time-btn">8am – 10am</button>
+              <button type="button" class="time-btn">10am – 12pm</button>
+              <button type="button" class="time-btn">12pm – 2pm</button>
+              <button type="button" class="time-btn">2pm – 4pm</button>
+              <button type="button" class="time-btn">4pm – 6pm</button>
+              <button type="button" class="time-btn">6pm – 8pm</button>
+              <button type="button" class="time-btn">8pm – 10pm</button>
+            </div>
+            <div class="alert alert-warning d-flex align-items-center gap-2 mt-2">
+              <i class="bi bi-calendar-check flex-shrink-0"></i>
+              <small id="availability-summary">No availability selected yet.</small>
+            </div>
+          </div>
+
+          <!-- Account Setup -->
+          <div class="form-section">
+            <div class="form-section-title"><i class="bi bi-lock me-2"></i>Account Setup</div>
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <label class="form-label">Password *</label>
+                <input id="t-pwd" type="password" class="form-control" placeholder="Choose a strong password" required />
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Confirm Password *</label>
+                <input id="t-confirm" type="password" class="form-control" placeholder="Repeat your password" required />
+              </div>
+            </div>
+          </div>
+
+          <!-- Terms -->
+          <div class="mb-4">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="terms" required />
+              <label class="form-check-label small" for="terms">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>. I confirm that the information I have provided is accurate and truthful.</label>
+            </div>
+          </div>
+
+          <!-- Error / Success Messages -->
+          <div class="alert alert-danger d-none form-error mb-3"></div>
+          <div class="alert alert-success d-none form-success">
+            <i class="bi bi-check-circle-fill me-2"></i><strong>Application submitted!</strong> Our admin team will review your details and contact you within 3–5 working days. You can check your application status on your <a href="tutor-dashboard.html">Tutor Dashboard</a>.
+          </div>
+
+          <button id="t-submit" type="submit" class="btn btn-primary btn-lg w-100">
+            <i class="bi bi-send me-2"></i>Submit Application
+          </button>
+          <p class="text-center small text-muted mt-3">Already applied? <a href="tutor-dashboard.html">Check your application status</a></p>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="row g-4">
+      <div class="col-lg-4"><span class="footer-brand">Tutor<span>Hut</span></span><p>Connecting students with verified expert tutors.</p></div>
+      <div class="col-6 col-lg-2"><h6>Platform</h6><a href="browse-tutors.html">Browse Tutors</a><a href="student-register.html">Register</a></div>
+      <div class="col-6 col-lg-2"><h6>Company</h6><a href="about.html">About</a><a href="contact.html">Contact</a></div>
+    </div>
+    <div class="footer-bottom text-center">© 2025 TutorHut. All rights reserved.</div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+<script src="js/script.js"></script>
+<script type="module">
+  import {
+    auth, createUserWithEmailAndPassword, updateProfile,
+    saveToSheets, saveTutorApplication, authErrorMessage
+  } from "./js/firebase.js";
+
+  const form   = document.getElementById("tutor-reg-form");
+  const btn    = document.getElementById("t-submit");
+  const errDiv = form.querySelector(".form-error");
+  const okDiv  = form.querySelector(".form-success");
+
+  form.addEventListener("submit", async function (e) {
+    e.preventDefault();
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+
+    const fname   = document.getElementById("t-fname").value.trim();
+    const lname   = document.getElementById("t-lname").value.trim();
+    const email   = document.getElementById("t-email").value.trim();
+    const phone   = document.getElementById("t-phone").value.trim();
+    const bio     = document.getElementById("t-bio").value.trim();
+    const qual    = document.getElementById("t-qual").value;
+    const field   = document.getElementById("t-field").value.trim();
+    const inst    = document.getElementById("t-institution").value.trim();
+    const exp     = document.getElementById("t-exp").value;
+    const certs   = document.getElementById("t-certs").value.trim();
+    const pwd     = document.getElementById("t-pwd").value;
+    const confirm = document.getElementById("t-confirm").value;
+
+    if (pwd !== confirm) {
+      errDiv.textContent = "Passwords do not match.";
+      errDiv.classList.remove("d-none");
+      return;
+    }
+
+    errDiv.classList.add("d-none");
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Submitting…';
+
+    try {
+      const credential = await createUserWithEmailAndPassword(auth, email, pwd);
+
+      // Tag account as tutor so nav-auth.js can route correctly
+      await updateProfile(credential.user, { displayName: `tutor:${fname}` });
+
+      const subjects = [...form.querySelectorAll('.subject-check-label input:checked')]
+                         .map(cb => cb.value).join(", ");
+      const days     = [...form.querySelectorAll('.day-btn.active')]
+                         .map(b => b.textContent.trim()).join(", ");
+      const times    = [...form.querySelectorAll('.time-btn.active')]
+                         .map(b => b.textContent.trim()).join(", ");
+
+      const appData = {
+        name: `${fname} ${lname}`,
+        email, phone, bio, subjects,
+        qualification: qual,
+        field, institution: inst,
+        experience: exp,
+        certifications: certs,
+        availability: [days && `Days: ${days}`, times && `Times: ${times}`].filter(Boolean).join(" | ")
+      };
+
+      // Save to Firestore (shown in admin portal) and Sheets (backup)
+      await saveTutorApplication(credential.user.uid, appData);
+      await saveToSheets({ type: "tutor", ...appData });
+
+      btn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Application Submitted!';
+      okDiv.classList.remove("d-none");
+      okDiv.scrollIntoView({ behavior: "smooth", block: "center" });
+      form.querySelectorAll("input, select, textarea").forEach(el => el.disabled = true);
+    } catch (err) {
+      errDiv.textContent = authErrorMessage(err.code);
+      errDiv.classList.remove("d-none");
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-send me-2"></i>Submit Application';
+    }
+  });
+</script>
+<script type="module" src="js/navbar.js"></script>
+</body>
+</html>

@@ -1,0 +1,131 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tutor Login – TutorHut</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg sticky-top" id="site-navbar"></nav>
+
+<section class="section">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-sm-10 col-md-7 col-lg-5">
+
+        <div class="text-center mb-4">
+          <div class="subject-icon mx-auto mb-3" style="width:56px;height:56px;font-size:1.5rem">🧑‍🏫</div>
+          <h2 class="fw-700 mb-1">Tutor Login</h2>
+          <p class="text-muted small">Sign in to check your application status and dashboard.</p>
+        </div>
+
+        <div class="card p-4 p-md-5">
+          <form id="tutor-login-form" class="th-form" data-firebase="true" novalidate>
+
+            <div class="mb-3">
+              <label class="form-label">Email Address</label>
+              <input id="tl-email" type="email" class="form-control" placeholder="you@example.com" required />
+            </div>
+            <div class="mb-4">
+              <label class="form-label">Password</label>
+              <input id="tl-pwd" type="password" class="form-control" placeholder="Your password" required />
+            </div>
+
+            <div class="alert alert-danger d-none form-error mb-3"></div>
+            <div class="alert alert-success d-none form-success mb-3">
+              <i class="bi bi-check-circle-fill me-2"></i>Logged in! Redirecting to your dashboard…
+            </div>
+
+            <button id="tl-submit" type="submit" class="btn btn-primary btn-lg w-100">
+              <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+            </button>
+
+            <p class="text-center small text-muted mt-4 mb-0">
+              Not applied yet? <a href="tutor-register.html">Apply to become a tutor</a>
+            </p>
+          </form>
+        </div>
+
+        <div class="text-center mt-4">
+          <p class="small text-muted mb-0">Are you a student? <a href="login.html?type=student">Student login →</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-bottom text-center">© 2025 TutorHut. All rights reserved.</div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+<script src="js/script.js"></script>
+<script type="module">
+  import { auth, onAuthStateChanged, signInWithEmailAndPassword, signOut, authErrorMessage, getTutorByUid } from "./js/firebase.js";
+
+  // If already logged in as tutor, skip straight to dashboard
+  onAuthStateChanged(auth, (user) => {
+    if (user && (user.displayName || "").startsWith("tutor:")) {
+      window.location.replace("tutor-dashboard.html");
+    }
+  });
+
+  const form   = document.getElementById("tutor-login-form");
+  const btn    = document.getElementById("tl-submit");
+  const errDiv = form.querySelector(".form-error");
+  const okDiv  = form.querySelector(".form-success");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+
+    const email = document.getElementById("tl-email").value.trim();
+    const pwd   = document.getElementById("tl-pwd").value;
+
+    errDiv.classList.add("d-none");
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Signing in…';
+
+    try {
+      const credential = await signInWithEmailAndPassword(auth, email, pwd);
+      const dn = credential.user.displayName || "";
+
+      if (!dn.startsWith("tutor:")) {
+        await auth.signOut();
+        errDiv.textContent = "This account is not registered as a tutor. Please use the Student Login instead.";
+        errDiv.classList.remove("d-none");
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-box-arrow-in-right me-2"></i>Sign In';
+        return;
+      }
+
+      const record = await getTutorByUid(credential.user.uid);
+      if (record && (record.status === "frozen" || record.status === "banned" || record.status === "removed")) {
+        await signOut(auth);
+        errDiv.textContent = "Your account has been suspended. Please contact TutorHut admin.";
+        errDiv.classList.remove("d-none");
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-box-arrow-in-right me-2"></i>Sign In';
+        return;
+      }
+
+      okDiv.classList.remove("d-none");
+      btn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Redirecting…';
+      setTimeout(() => { window.location.href = "tutor-dashboard.html"; }, 1200);
+    } catch (err) {
+      errDiv.textContent = authErrorMessage(err.code);
+      errDiv.classList.remove("d-none");
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-box-arrow-in-right me-2"></i>Sign In';
+    }
+  });
+</script>
+<script type="module" src="js/navbar.js"></script>
+</body>
+</html>

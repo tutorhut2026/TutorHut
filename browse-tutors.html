@@ -1,0 +1,198 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Browse Tutors – TutorHut</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg sticky-top" id="site-navbar"></nav>
+
+<div class="page-header">
+  <div class="container">
+    <nav aria-label="breadcrumb"><ol class="breadcrumb mb-2"><li class="breadcrumb-item"><a href="index.html">Home</a></li><li class="breadcrumb-item active">Browse Tutors</li></ol></nav>
+    <h1>Browse Tutors</h1>
+    <p>Find expert, admin-verified tutors by subject, day, and time.</p>
+  </div>
+</div>
+
+<section class="section">
+  <div class="container">
+
+    <!-- Info Banner -->
+    <div class="alert alert-info d-flex gap-2 align-items-start mb-4">
+      <i class="bi bi-info-circle-fill flex-shrink-0 mt-1"></i>
+      <div>You can browse all tutors freely. To request a tuition session, please <a href="student-login.html">login</a> or <a href="student-register.html">register as a student</a>. Tutor contact details are only shared after admin approval of your request.</div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar mb-4">
+      <form id="tutor-filter-form">
+        <div class="row g-3 align-items-end">
+          <div class="col-sm-6 col-md-3">
+            <label class="form-label small fw-600">Subject</label>
+            <select class="form-select form-select-sm" id="filter-subject">
+              <option value="">All Subjects</option>
+              <option value="mathematics">Mathematics</option>
+              <option value="physics">Physics</option>
+              <option value="chemistry">Chemistry</option>
+              <option value="biology">Biology</option>
+              <option value="english">English</option>
+              <option value="computing">Computing</option>
+              <option value="history">History</option>
+              <option value="geography">Geography</option>
+              <option value="french">French</option>
+              <option value="spanish">Spanish</option>
+            </select>
+          </div>
+          <div class="col-sm-6 col-md-3">
+            <label class="form-label small fw-600">Day</label>
+            <select class="form-select form-select-sm" id="filter-day">
+              <option value="">Any Day</option>
+              <option value="monday">Monday</option>
+              <option value="tuesday">Tuesday</option>
+              <option value="wednesday">Wednesday</option>
+              <option value="thursday">Thursday</option>
+              <option value="friday">Friday</option>
+              <option value="saturday">Saturday</option>
+              <option value="sunday">Sunday</option>
+            </select>
+          </div>
+          <div class="col-sm-6 col-md-3">
+            <label class="form-label small fw-600">Time Slot</label>
+            <select class="form-select form-select-sm" id="filter-time">
+              <option value="">Any Time</option>
+              <option value="8am">8am – 10am</option>
+              <option value="10am">10am – 12pm</option>
+              <option value="12pm">12pm – 2pm</option>
+              <option value="2pm">2pm – 4pm</option>
+              <option value="4pm">4pm – 6pm</option>
+              <option value="6pm">6pm – 8pm</option>
+              <option value="8pm">8pm – 10pm</option>
+            </select>
+          </div>
+          <div class="col-sm-6 col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary btn-sm flex-grow-1"><i class="bi bi-search me-1"></i>Search</button>
+            <button type="button" id="filter-reset" class="btn btn-outline-secondary btn-sm">Reset</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Results Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <p class="mb-0 text-muted small" id="tutor-count">
+        <span class="spinner-border spinner-border-sm me-1"></span>Loading tutors…
+      </p>
+    </div>
+
+    <!-- Tutor Cards Grid (populated by Firestore) -->
+    <div class="row g-4" id="tutor-grid"></div>
+
+    <!-- Empty State (shown when no approved tutors) -->
+    <div class="text-center py-5 text-muted d-none" id="tutor-empty">
+      <i class="bi bi-people fs-1 d-block mb-3 opacity-25"></i>
+      <h5 class="fw-600 mb-2">No tutors available yet</h5>
+      <p class="small mb-4">Tutors appear here once they've registered and been approved by the admin team.</p>
+      <a href="tutor-register.html" class="btn btn-primary">Apply as a Tutor</a>
+    </div>
+
+    <!-- Register CTA -->
+    <div class="card mt-5 p-4 text-center" style="background:var(--primary-light);border-color:rgba(37,99,235,.2)">
+      <h5 class="fw-700 mb-2">Want to book a session?</h5>
+      <p class="text-muted mb-3">Register as a student to request tuition sessions and access tutor contact details once approved.</p>
+      <div class="d-flex justify-content-center gap-2 flex-wrap">
+        <a href="student-register.html" class="btn btn-primary">Create Student Account</a>
+        <a href="student-login.html" class="btn btn-outline-primary">Already registered? Login</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="row g-4">
+      <div class="col-lg-4"><span class="footer-brand">Tutor<span>Hut</span></span><p>Connecting students with verified expert tutors.</p></div>
+      <div class="col-6 col-lg-2"><h6>Platform</h6><a href="browse-tutors.html">Browse Tutors</a><a href="tutor-register.html">Become a Tutor</a><a href="student-register.html">Register</a></div>
+      <div class="col-6 col-lg-2"><h6>Company</h6><a href="about.html">About</a><a href="contact.html">Contact</a></div>
+      <div class="col-6 col-lg-2"><h6>Admin</h6><a href="admin-login.html">Admin Login</a><a href="admin-dashboard.html">Dashboard</a></div>
+    </div>
+    <div class="footer-bottom text-center">© 2025 TutorHut. All rights reserved.</div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+<script src="js/script.js"></script>
+<script type="module" src="js/navbar.js"></script>
+<script type="module">
+  import { getApprovedTutors } from "./js/firebase.js";
+
+  const COLORS = [
+    "linear-gradient(135deg,#2563EB,#1D4ED8)",
+    "linear-gradient(135deg,#10B981,#065F46)",
+    "linear-gradient(135deg,#F59E0B,#92400E)",
+    "linear-gradient(135deg,#EC4899,#831843)",
+    "linear-gradient(135deg,#8B5CF6,#4C1D95)",
+    "linear-gradient(135deg,#0EA5E9,#0C4A6E)"
+  ];
+
+  async function loadTutors() {
+    const grid  = document.getElementById("tutor-grid");
+    const empty = document.getElementById("tutor-empty");
+    const count = document.getElementById("tutor-count");
+
+    const tutors = await getApprovedTutors();
+
+    if (!tutors.length) {
+      count.textContent = "No approved tutors yet.";
+      empty.classList.remove("d-none");
+      return;
+    }
+
+    count.innerHTML = `<strong class="text-dark">${tutors.length} tutor${tutors.length !== 1 ? "s" : ""}</strong> available`;
+
+    tutors.forEach((tutor, i) => {
+      const initial  = (tutor.name || "T").charAt(0).toUpperCase();
+      const color    = COLORS[i % COLORS.length];
+      const subjects = (tutor.subjects || "").split(",").slice(0, 3).map(s =>
+        `<span class="badge-subject">${s.trim()}</span>`).join(" ");
+      const avail    = tutor.availability || "";
+      const days     = avail.match(/Days:\s*([^|]+)/)?.[1]?.trim().split(",").slice(0, 3)
+                         .map(d => `<span class="badge-day">${d.trim().slice(0,3)}</span>`).join(" ") || "";
+
+      grid.insertAdjacentHTML("beforeend", `
+        <div class="col-md-6 col-lg-4 tutor-card-item"
+             data-subjects="${(tutor.subjects||"").toLowerCase()}"
+             data-availability="${avail.toLowerCase()}">
+          <div class="card card-hover h-100">
+            <div class="card-body p-4">
+              <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="avatar-placeholder" style="background:${color}">${initial}</div>
+                <div>
+                  <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <h5 class="mb-0 fw-700">${tutor.name || "Tutor"}</h5>
+                    ${(tutor.verified === "true" || tutor.verified === true) ? '<span class="badge bg-success" style="font-size:.7rem"><i class="bi bi-patch-check-fill me-1"></i>Verified</span>' : ""}
+                  </div>
+                  <div class="small text-muted">${tutor.qualification || ""} · ${tutor.experience || ""}</div>
+                </div>
+              </div>
+              <p class="small text-muted mb-3">${(tutor.bio || "").slice(0, 120)}${(tutor.bio||"").length > 120 ? "…" : ""}</p>
+              <div class="d-flex flex-wrap gap-1 mb-2">${subjects}</div>
+              <div class="d-flex flex-wrap gap-1">${days}</div>
+            </div>
+            <div class="card-footer bg-transparent border-top p-3 d-flex gap-2">
+              <a href="tuition-request.html?tutorid=${tutor.id}" class="btn btn-primary btn-sm flex-grow-1">Request Session</a>
+            </div>
+          </div>
+        </div>`);
+    });
+  }
+
+  loadTutors();
+</script>
+</body>
+</html>

@@ -1,0 +1,245 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Dashboard – TutorHut</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg sticky-top" id="site-navbar"></nav>
+
+<div class="page-header">
+  <div class="container">
+    <h1 id="dashboard-heading">My Dashboard</h1>
+    <p id="dashboard-sub">Track your tuition requests and manage your sessions.</p>
+  </div>
+</div>
+
+<section class="section">
+  <div class="container" id="dashboard-content">
+    <!-- Auth gate — shown until auth resolves -->
+    <div class="text-center py-5 text-muted" id="auth-gate">
+      <span class="spinner-border spinner-border-sm me-2"></span>Loading your dashboard…
+    </div>
+  </div>
+</section>
+
+<!-- Tutor Contact Modal -->
+<div class="modal fade" id="tutorContactModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title fw-700"><i class="bi bi-person-check me-2 text-success"></i>Session Approved – Tutor Contact Details</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="tutor-contact-body">
+        <div class="alert alert-success mb-3">
+          <i class="bi bi-check-circle-fill me-2"></i>Your session request has been approved. Please contact your tutor to arrange your first session.
+        </div>
+        <div id="tutor-contact-details"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="container">
+    <div class="footer-bottom text-center">© 2025 TutorHut. All rights reserved.</div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+<script src="js/script.js"></script>
+<script type="module" src="js/navbar.js"></script>
+<script type="module">
+  import {
+    auth, onAuthStateChanged, signOut,
+    getStudentRequests, getApprovedTutors
+  } from "./js/firebase.js";
+
+  onAuthStateChanged(auth, async (user) => {
+    const gate = document.getElementById("auth-gate");
+    const content = document.getElementById("dashboard-content");
+
+    if (!user) {
+      gate.innerHTML = `
+        <div class="text-center py-5">
+          <i class="bi bi-lock fs-1 d-block mb-3 text-muted opacity-25"></i>
+          <h5 class="fw-700 mb-2">Please sign in</h5>
+          <p class="text-muted mb-4">You need to be signed in as a student to view your dashboard.</p>
+          <a href="login.html" class="btn btn-primary">Sign In</a>
+        </div>`;
+      return;
+    }
+
+    const dn = user.displayName || "";
+    if (!dn.startsWith("student:")) {
+      gate.innerHTML = `
+        <div class="text-center py-5">
+          <i class="bi bi-exclamation-triangle fs-1 d-block mb-3 text-warning opacity-50"></i>
+          <h5 class="fw-700 mb-2">Student accounts only</h5>
+          <p class="text-muted mb-4">This dashboard is for students. Please sign in with a student account.</p>
+          <a href="login.html" class="btn btn-primary">Sign In</a>
+        </div>`;
+      return;
+    }
+
+    const name = dn.replace("student:", "");
+    document.getElementById("dashboard-heading").textContent = `Welcome, ${name}!`;
+    document.getElementById("dashboard-sub").textContent = "Here are your tuition requests and approved sessions.";
+
+    // Load data
+    const [requests, approvedTutors] = await Promise.all([
+      getStudentRequests(user.uid),
+      getApprovedTutors()
+    ]);
+
+    const tutorMap = {};
+    approvedTutors.forEach(t => { tutorMap[t.id] = t; });
+
+    const pending  = requests.filter(r => r.status === "pending").length;
+    const approved = requests.filter(r => r.status === "approved").length;
+    const rejected = requests.filter(r => r.status === "rejected").length;
+
+    gate.style.display = "none";
+    content.insertAdjacentHTML("beforeend", `
+      <!-- Stats -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="dash-stat-card">
+            <div class="stat-icon blue"><i class="bi bi-list-check" style="color:var(--primary)"></i></div>
+            <div><div class="stat-value">${requests.length}</div><div class="stat-label">Total Requests</div></div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="dash-stat-card">
+            <div class="stat-icon amber"><i class="bi bi-hourglass-split" style="color:var(--accent)"></i></div>
+            <div><div class="stat-value">${pending}</div><div class="stat-label">Pending</div></div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="dash-stat-card">
+            <div class="stat-icon green"><i class="bi bi-check2-circle" style="color:var(--success)"></i></div>
+            <div><div class="stat-value">${approved}</div><div class="stat-label">Approved</div></div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="dash-stat-card">
+            <div class="stat-icon red"><i class="bi bi-x-circle" style="color:var(--danger)"></i></div>
+            <div><div class="stat-value">${rejected}</div><div class="stat-label">Rejected</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Requests Table -->
+      <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-calendar-check me-2"></i>My Tuition Requests</span>
+          <a href="browse-tutors.html" class="btn btn-primary btn-sm"><i class="bi bi-plus me-1"></i>New Booking</a>
+        </div>
+        <div class="table-responsive">
+          <table class="table mb-0">
+            <thead>
+              <tr>
+                <th>Tutor</th>
+                <th>Subject</th>
+                <th>Day &amp; Time</th>
+                <th>Level</th>
+                <th>Submitted</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="requests-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Browse CTA -->
+      <div class="card p-4 text-center" style="background:var(--primary-light);border-color:rgba(37,99,235,.2)">
+        <h5 class="fw-700 mb-2">Want to book another session?</h5>
+        <p class="text-muted mb-3 small">Browse all approved tutors and submit a new session request.</p>
+        <a href="browse-tutors.html" class="btn btn-primary">Browse Tutors</a>
+      </div>
+    `);
+
+    const tbody = document.getElementById("requests-tbody");
+
+    if (!requests.length) {
+      tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-5">
+        <i class="bi bi-inbox fs-1 d-block mb-2 opacity-25"></i>
+        No requests yet. <a href="browse-tutors.html">Browse tutors</a> to make your first booking.
+      </td></tr>`;
+    } else {
+      requests.forEach(req => {
+        const date = req.submittedAt ? new Date(req.submittedAt).toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" }) : "—";
+
+        const statusBadge = {
+          pending:  '<span class="badge bg-warning text-dark">Pending Review</span>',
+          approved: '<span class="badge bg-success">Approved</span>',
+          rejected: '<span class="badge bg-danger">Rejected</span>'
+        }[req.status] || '<span class="badge bg-secondary">Unknown</span>';
+
+        let actions = "";
+        if (req.status === "approved") {
+          actions = `<button class="btn btn-success btn-sm" onclick="showContact('${req.tutorId}')">
+            <i class="bi bi-person-lines-fill me-1"></i>Tutor Contact
+          </button>`;
+        } else if (req.status === "pending") {
+          actions = `<span class="text-muted small">Awaiting review</span>`;
+        } else {
+          actions = `<a href="browse-tutors.html" class="btn btn-outline-primary btn-sm">Book Again</a>`;
+        }
+
+        tbody.insertAdjacentHTML("beforeend", `
+          <tr>
+            <td><div class="fw-600">${req.tutorName || "—"}</div></td>
+            <td>${req.subject || "—"}</td>
+            <td class="small">${req.day || "—"}${req.time ? ` · ${req.time}` : ""}</td>
+            <td class="small">${req.level || "—"}</td>
+            <td class="small">${date}</td>
+            <td>${statusBadge}</td>
+            <td>${actions}</td>
+          </tr>`);
+      });
+    }
+
+    // Expose tutorMap for the contact modal
+    window._tutorMap = tutorMap;
+  });
+
+  window.showContact = function(tutorId) {
+    const tutor = window._tutorMap?.[tutorId];
+    const details = document.getElementById("tutor-contact-details");
+    if (!tutor) {
+      details.innerHTML = `<p class="text-muted small">Tutor contact information is not available. Please contact admin.</p>`;
+    } else {
+      details.innerHTML = `
+        <div class="row g-3">
+          <div class="col-sm-6">
+            <div class="fw-600 small text-muted mb-1">Tutor Name</div>
+            <div class="fw-600">${tutor.name || "—"}</div>
+          </div>
+          <div class="col-sm-6">
+            <div class="fw-600 small text-muted mb-1">Email</div>
+            <div><a href="mailto:${tutor.email}">${tutor.email || "—"}</a></div>
+          </div>
+          <div class="col-sm-6">
+            <div class="fw-600 small text-muted mb-1">Phone</div>
+            <div>${tutor.phone || "Not provided"}</div>
+          </div>
+          <div class="col-sm-6">
+            <div class="fw-600 small text-muted mb-1">Availability</div>
+            <div class="small">${tutor.availability || "—"}</div>
+          </div>
+        </div>`;
+    }
+    new bootstrap.Modal(document.getElementById("tutorContactModal")).show();
+  };
+</script>
+</body>
+</html>

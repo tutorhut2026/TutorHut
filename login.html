@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign In – TutorHut</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div class="auth-wrapper">
+  <div style="width:100%;max-width:480px">
+
+    <div class="text-center mb-4">
+      <a href="index.html" class="auth-logo d-block">Tutor<span>Hut</span></a>
+      <p class="text-muted small mb-0">Sign in to your account</p>
+    </div>
+
+    <div class="auth-card" style="max-width:100%">
+
+      <!-- Tab selector -->
+      <div class="d-flex rounded-3 mb-4 p-1" style="background:#F1F5F9;gap:4px" id="tab-bar">
+        <button type="button" id="tab-student"
+          class="btn btn-primary flex-grow-1 fw-600"
+          onclick="setTab('student')">
+          <i class="bi bi-mortarboard me-2"></i>Student
+        </button>
+        <button type="button" id="tab-tutor"
+          class="btn btn-outline-secondary flex-grow-1 fw-600"
+          style="border:none;background:transparent"
+          onclick="setTab('tutor')">
+          <i class="bi bi-person-workspace me-2"></i>Tutor
+        </button>
+      </div>
+
+      <p class="text-muted small mb-3" id="tab-hint">
+        Sign in to browse tutors and manage your sessions.
+      </p>
+
+      <form id="login-form" novalidate>
+        <div class="mb-3">
+          <label class="form-label">Email Address</label>
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0"><i class="bi bi-envelope text-muted"></i></span>
+            <input id="login-email" type="email" class="form-control border-start-0" placeholder="you@example.com" required />
+          </div>
+        </div>
+        <div class="mb-4">
+          <label class="form-label">Password</label>
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0"><i class="bi bi-lock text-muted"></i></span>
+            <input id="login-pwd" type="password" class="form-control border-start-0" placeholder="Your password" required />
+            <button class="btn btn-outline-secondary border-start-0" type="button" onclick="togglePwd()">
+              <i class="bi bi-eye" id="pwd-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="alert alert-danger d-none" id="login-error"></div>
+        <div class="alert alert-success d-none" id="login-ok">
+          <i class="bi bi-check-circle-fill me-2"></i>Signed in! Redirecting…
+        </div>
+
+        <button id="login-btn" type="submit" class="btn btn-primary btn-lg w-100">
+          <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+        </button>
+      </form>
+
+      <div class="divider mt-4"></div>
+      <p class="text-center small text-muted mb-0" id="register-hint">
+        New student? <a href="student-register.html">Create a free account</a>
+      </p>
+    </div>
+
+    <p class="text-center small text-muted mt-3" id="other-hint">
+      Are you a tutor? <a href="#" onclick="setTab('tutor');return false">Switch to Tutor tab</a> · <a href="tutor-register.html">Apply to join</a>
+    </p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+<script>
+  let activeTab = "student";
+
+  function setTab(tab) {
+    activeTab = tab;
+    const stu = document.getElementById("tab-student");
+    const tut = document.getElementById("tab-tutor");
+    const hint = document.getElementById("tab-hint");
+    const regHint = document.getElementById("register-hint");
+    const othHint = document.getElementById("other-hint");
+
+    if (tab === "student") {
+      stu.classList.replace("btn-outline-secondary", "btn-primary");
+      stu.style.background = "";
+      tut.classList.replace("btn-primary", "btn-outline-secondary");
+      tut.style.background = "transparent";
+      hint.textContent = "Sign in to browse tutors and manage your sessions.";
+      regHint.innerHTML = 'New student? <a href="student-register.html">Create a free account</a>';
+      othHint.innerHTML = 'Are you a tutor? <a href="#" onclick="setTab(\'tutor\');return false">Switch to Tutor tab</a> · <a href="tutor-register.html">Apply to join</a>';
+    } else {
+      tut.classList.replace("btn-outline-secondary", "btn-primary");
+      tut.style.background = "";
+      stu.classList.replace("btn-primary", "btn-outline-secondary");
+      stu.style.background = "transparent";
+      hint.textContent = "Sign in to check your application status and tutor dashboard.";
+      regHint.innerHTML = 'New tutor? <a href="tutor-register.html">Apply to join TutorHut</a>';
+      othHint.innerHTML = 'Are you a student? <a href="#" onclick="setTab(\'student\');return false">Switch to Student tab</a>';
+    }
+  }
+
+  function togglePwd() {
+    const inp = document.getElementById("login-pwd");
+    const eye = document.getElementById("pwd-eye");
+    inp.type = inp.type === "password" ? "text" : "password";
+    eye.className = inp.type === "text" ? "bi bi-eye-slash" : "bi bi-eye";
+  }
+
+  // Pre-select tab from URL param
+  const urlType = new URLSearchParams(window.location.search).get("type");
+  if (urlType === "tutor") setTab("tutor");
+</script>
+<script type="module">
+  import { auth, signInWithEmailAndPassword, signOut, authErrorMessage, ADMIN_EMAIL, getTutorByUid } from "./js/firebase.js";
+
+  document.getElementById("login-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn  = document.getElementById("login-btn");
+    const err  = document.getElementById("login-error");
+    const ok   = document.getElementById("login-ok");
+    const email = document.getElementById("login-email").value.trim();
+    const pwd   = document.getElementById("login-pwd").value;
+
+    err.classList.add("d-none");
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Signing in…';
+
+    try {
+      const { user } = await signInWithEmailAndPassword(auth, email, pwd);
+      const dn = user.displayName || "";
+      const tab = window.activeTab;
+
+      let redirect = null;
+
+      if (tab === "student") {
+        if (dn.startsWith("student:")) {
+          redirect = "student-dashboard.html";
+        } else if (email === ADMIN_EMAIL) {
+          err.textContent = "Admin accounts must use the Tutor tab.";
+          err.classList.remove("d-none");
+          await auth.signOut();
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bi bi-box-arrow-in-right me-2"></i>Sign In';
+          return;
+        } else {
+          err.textContent = "This account is not registered as a student. Try the Tutor tab.";
+          err.classList.remove("d-none");
+          await auth.signOut();
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bi bi-box-arrow-in-right me-2"></i>Sign In';
+          return;
+        }
+      } else {
+        // Tutor tab handles tutors AND admin
+        if (email === ADMIN_EMAIL) {
+          redirect = "admin-dashboard.html";
+        } else if (dn.startsWith("tutor:")) {
+          // Check if frozen/banned before allowing in
+          const record = await getTutorByUid(user.uid);
+          if (record && (record.status === "frozen" || record.status === "banned" || record.status === "removed")) {
+            await signOut(auth);
+            err.textContent = "Your account has been suspended. Please contact TutorHut admin.";
+            err.classList.remove("d-none");
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-box-arrow-in-right me-2"></i>Sign In';
+            return;
+          }
+          redirect = "tutor-dashboard.html";
+        } else {
+          err.textContent = "This account is not registered as a tutor. Try the Student tab.";
+          err.classList.remove("d-none");
+          await signOut(auth);
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bi bi-box-arrow-in-right me-2"></i>Sign In';
+          return;
+        }
+      }
+
+      ok.classList.remove("d-none");
+      btn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Redirecting…';
+      setTimeout(() => { window.location.href = redirect; }, 1000);
+
+    } catch (ex) {
+      err.textContent = authErrorMessage(ex.code);
+      err.classList.remove("d-none");
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-box-arrow-in-right me-2"></i>Sign In';
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,287 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Request Tuition – TutorHut</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg sticky-top" id="site-navbar"></nav>
+
+<div class="page-header">
+  <div class="container">
+    <nav aria-label="breadcrumb"><ol class="breadcrumb mb-2"><li class="breadcrumb-item"><a href="index.html">Home</a></li><li class="breadcrumb-item"><a href="browse-tutors.html">Browse Tutors</a></li><li class="breadcrumb-item active">Request Session</li></ol></nav>
+    <h1>Request a Tuition Session</h1>
+    <p>Fill in the form below to request a session. Your request will be reviewed by admin.</p>
+  </div>
+</div>
+
+<section class="section">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-7">
+
+        <!-- How it works alert -->
+        <div class="alert alert-info d-flex gap-2 align-items-start mb-4">
+          <i class="bi bi-info-circle-fill flex-shrink-0 mt-1"></i>
+          <div>
+            <strong>How this works:</strong> Submit your request below. Our admin team will review and confirm the availability. Once approved, you'll receive the tutor's contact details by email.
+          </div>
+        </div>
+
+        <!-- Tutor Info Card -->
+        <div class="card p-4 mb-4" style="border-color:var(--primary-light);background:var(--primary-light)">
+          <div class="d-flex align-items-center gap-3">
+            <div class="avatar-placeholder"><i class="bi bi-person-fill"></i></div>
+            <div>
+              <h5 class="fw-700 mb-1" id="req-tutor-name">Selected Tutor</h5>
+              <div class="small text-muted">Choose a tutor from <a href="browse-tutors.html">Browse Tutors</a> to pre-fill this form.</div>
+            </div>
+          </div>
+        </div>
+
+        <form class="th-form" novalidate>
+          <!-- Student Details -->
+          <div class="form-section">
+            <div class="form-section-title"><i class="bi bi-person me-2"></i>Your Details</div>
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <label class="form-label">Your Name *</label>
+                <input type="text" class="form-control" placeholder="Your full name" required />
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Your Email *</label>
+                <input type="email" class="form-control" placeholder="your@email.com" required />
+              </div>
+            </div>
+          </div>
+
+          <!-- Session Details -->
+          <div class="form-section">
+            <div class="form-section-title"><i class="bi bi-calendar3 me-2"></i>Session Details</div>
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label">Tutor *</label>
+                <input type="text" class="form-control" id="request-tutor" placeholder="Tutor name" required />
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Subject *</label>
+                <select class="form-select" required>
+                  <option value="">Select subject</option>
+                  <option>Mathematics</option>
+                  <option>Further Maths</option>
+                  <option>Statistics</option>
+                  <option>Physics</option>
+                  <option>Chemistry</option>
+                  <option>Biology</option>
+                  <option>English Language</option>
+                  <option>English Literature</option>
+                  <option>Computing</option>
+                  <option>History</option>
+                  <option>Geography</option>
+                  <option>French</option>
+                  <option>Spanish</option>
+                </select>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Tuition Level *</label>
+                <select class="form-select" required>
+                  <option value="">Select level</option>
+                  <option>KS3</option>
+                  <option>GCSE</option>
+                  <option>A-Level</option>
+                  <option>University</option>
+                  <option>Adult / Other</option>
+                </select>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Preferred Day *</label>
+                <select class="form-select" required>
+                  <option value="">Select day</option>
+                  <option>Monday</option>
+                  <option>Tuesday</option>
+                  <option>Wednesday</option>
+                  <option>Thursday</option>
+                  <option>Friday</option>
+                  <option>Saturday</option>
+                  <option>Sunday</option>
+                </select>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Preferred Time Slot *</label>
+                <select class="form-select" required>
+                  <option value="">Select time</option>
+                  <option>8am – 10am</option>
+                  <option>10am – 12pm</option>
+                  <option>12pm – 2pm</option>
+                  <option>2pm – 4pm</option>
+                  <option>4pm – 6pm</option>
+                  <option>6pm – 8pm</option>
+                  <option>8pm – 10pm</option>
+                </select>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Session Format *</label>
+                <select class="form-select" required>
+                  <option>Online (Video Call)</option>
+                  <option>In Person</option>
+                  <option>Either</option>
+                </select>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Start Date (approx.) *</label>
+                <input type="date" class="form-control" required />
+              </div>
+              <div class="col-12">
+                <label class="form-label">Additional Notes / Goals</label>
+                <textarea class="form-control" rows="3" placeholder="e.g. Struggling with calculus at A-Level, sitting exams in May 2025, need weekly sessions..."></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Terms -->
+          <div class="mb-4">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="terms" required />
+              <label class="form-check-label small" for="terms">
+                I understand that this request will be reviewed by the TutorHut admin team. Tutor contact details will only be shared once my request is approved.
+              </label>
+            </div>
+          </div>
+
+          <!-- Success -->
+          <div class="alert alert-success d-none form-success mb-3">
+            <i class="bi bi-check-circle-fill me-2"></i><strong>Request submitted!</strong> Our admin team will review your request within 1–2 working days. <a href="student-dashboard.html">View your dashboard</a>
+          </div>
+          <div class="alert alert-danger d-none form-error mb-3"></div>
+
+          <button type="submit" id="req-submit" class="btn btn-primary btn-lg w-100">
+            <i class="bi bi-send me-2"></i>Submit Tuition Request
+          </button>
+          <p class="text-center small text-muted mt-3 mb-0">
+            <i class="bi bi-shield-check me-1 text-success"></i>Your request is reviewed by our admin team before any contact details are shared.
+          </p>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="row g-4">
+      <div class="col-lg-4"><span class="footer-brand">Tutor<span>Hut</span></span><p>Connecting students with verified expert tutors.</p></div>
+      <div class="col-6 col-lg-2"><h6>Platform</h6><a href="browse-tutors.html">Browse Tutors</a><a href="student-register.html">Register</a></div>
+      <div class="col-6 col-lg-2"><h6>Company</h6><a href="about.html">About</a><a href="contact.html">Contact</a></div>
+    </div>
+    <div class="footer-bottom text-center">© 2025 TutorHut. All rights reserved.</div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+<script src="js/script.js"></script>
+<script type="module">
+  import {
+    auth, onAuthStateChanged,
+    saveStudentRequest, getApprovedTutors, authErrorMessage
+  } from "./js/firebase.js";
+
+  // Pre-fill tutor from URL param ?tutorid=
+  const params   = new URLSearchParams(window.location.search);
+  const tutorId  = params.get("tutorid");
+  let   tutorDoc = null;
+
+  if (tutorId) {
+    getApprovedTutors().then(tutors => {
+      tutorDoc = tutors.find(t => String(t.id) === String(tutorId)) || null;
+      if (tutorDoc) {
+        document.getElementById("req-tutor-name").textContent = tutorDoc.name;
+        document.getElementById("request-tutor").value = tutorDoc.name;
+        const subSelect = document.querySelector('select[required]');
+        const subjects = (tutorDoc.subjects || "").split(",").map(s => s.trim()).filter(Boolean);
+        if (subjects.length && subSelect) {
+          subSelect.innerHTML = '<option value="">Select subject</option>' +
+            subjects.map(s => `<option>${s}</option>`).join("");
+        }
+      }
+    }).catch(() => {});
+  }
+
+  // Fill student details when logged in
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      const dn = user.displayName || "";
+      const name = dn.replace(/^(student|tutor):/, "") || "";
+      document.querySelectorAll('input[placeholder="Your full name"]').forEach(el => { el.value = name; el.readOnly = true; el.style.background = "var(--light)"; });
+      document.querySelectorAll('input[placeholder="your@email.com"]').forEach(el => { el.value = user.email; el.readOnly = true; el.style.background = "var(--light)"; });
+    }
+  });
+
+  // Form submit
+  document.querySelector("form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const form    = e.target;
+    const btn     = document.getElementById("req-submit");
+    const okDiv   = form.querySelector(".form-success");
+    const errDiv  = form.querySelector(".form-error");
+    const selects = form.querySelectorAll("select");
+    const textareas = form.querySelectorAll("textarea");
+
+    const user = auth.currentUser;
+    if (!user) {
+      errDiv.textContent = "You must be signed in to submit a request.";
+      errDiv.classList.remove("d-none");
+      return;
+    }
+
+    const tutorInput = document.getElementById("request-tutor").value.trim();
+    const subject = selects[0]?.value;
+    const level   = selects[1]?.value;
+    const day     = selects[2]?.value;
+    const time    = selects[3]?.value;
+    const format  = selects[4]?.value;
+    const notes   = textareas[0]?.value.trim();
+
+    if (!tutorInput || !subject || !level || !day || !time) {
+      errDiv.textContent = "Please fill in all required fields.";
+      errDiv.classList.remove("d-none");
+      return;
+    }
+
+    const dn = user.displayName || "";
+    const studentName = dn.replace(/^(student|tutor):/, "") || user.email.split("@")[0];
+
+    errDiv.classList.add("d-none");
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Submitting…';
+
+    try {
+      const reqData = {
+        studentName,
+        studentEmail: user.email,
+        tutorId:   tutorId || "",
+        tutorName: tutorInput,
+        subject, level, day, time, format, notes
+      };
+
+      await saveStudentRequest(user.uid, reqData);
+
+      btn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Request Submitted!';
+      okDiv.classList.remove("d-none");
+      okDiv.scrollIntoView({ behavior: "smooth", block: "center" });
+      form.querySelectorAll("input:not([readonly]), select, textarea").forEach(el => el.disabled = true);
+    } catch (err) {
+      errDiv.textContent = "Failed to submit request. Please try again.";
+      errDiv.classList.remove("d-none");
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-send me-2"></i>Submit Tuition Request';
+    }
+  });
+</script>
+<script type="module" src="js/navbar.js"></script>
+</body>
+</html>

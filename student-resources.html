@@ -1,0 +1,342 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Resources – TutorHut</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .resource-hero {
+      background: linear-gradient(135deg, var(--primary) 0%, #1D4ED8 60%, #1e3a8a 100%);
+      color: white;
+      padding: 3rem 0 2rem;
+    }
+    .resource-hero h1 { font-family: var(--font-head); color: white; }
+    .resource-hero p  { opacity: .85; }
+
+    .session-badge-hero {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: .82rem;
+      font-weight: 500;
+      color: white;
+    }
+
+    .resource-card-student {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      transition: box-shadow var(--transition), transform var(--transition);
+      overflow: hidden;
+      height: 100%;
+    }
+    .resource-card-student:hover {
+      box-shadow: var(--shadow);
+      transform: translateY(-3px);
+    }
+
+    .resource-thumb-lg {
+      height: 140px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .thumb-bg-video   { background: linear-gradient(135deg, #FEE2E2, #FECACA); color: #EF4444; }
+    .thumb-bg-paper   { background: linear-gradient(135deg, #EFF6FF, #DBEAFE); color: #2563EB; }
+    .thumb-bg-doc     { background: linear-gradient(135deg, #F0FDF4, #DCFCE7); color: #10B981; }
+    .thumb-bg-link    { background: linear-gradient(135deg, #F5F3FF, #EDE9FE); color: #7C3AED; }
+
+    .yt-play-btn {
+      width: 52px; height: 52px;
+      background: #EF4444;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.3rem;
+      box-shadow: 0 4px 12px rgba(239,68,68,.4);
+    }
+
+    .resource-type-badge {
+      font-size: .68rem;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 20px;
+      letter-spacing: .3px;
+      text-transform: uppercase;
+    }
+    .type-video  { background:#FEE2E2; color:#B91C1C; }
+    .type-paper  { background:#EFF6FF; color:#1D4ED8; }
+    .type-doc    { background:#F0FDF4; color:#065F46; }
+    .type-link   { background:#F5F3FF; color:#6D28D9; }
+
+    .subject-filter-pill {
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: .82rem;
+      font-weight: 500;
+      background: var(--white);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .subject-filter-pill:hover,
+    .subject-filter-pill.active {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: var(--white);
+    }
+
+    .new-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: var(--accent);
+      color: white;
+      font-size: .65rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+      letter-spacing: .4px;
+      text-transform: uppercase;
+    }
+
+    .session-info-card {
+      background: var(--primary-light);
+      border: 1px solid #BFDBFE;
+      border-radius: var(--radius);
+      padding: 1rem 1.2rem;
+    }
+
+    .stat-mini {
+      text-align: center;
+      padding: 1rem;
+      border-right: 1px solid var(--border);
+    }
+    .stat-mini:last-child { border-right: none; }
+    .stat-mini-val { font-size: 1.5rem; font-weight: 700; color: var(--dark); font-family: var(--font-head); }
+    .stat-mini-label { font-size: .75rem; color: var(--muted); }
+
+    .video-modal-embed {
+      position: relative;
+      padding-bottom: 56.25%;
+      height: 0;
+      overflow: hidden;
+      border-radius: var(--radius-sm);
+    }
+    .video-modal-embed iframe {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      border: none;
+    }
+
+    .empty-state {
+      padding: 4rem 2rem;
+      text-align: center;
+      color: var(--muted);
+    }
+    .empty-state i { font-size: 3rem; opacity: .3; }
+
+    .resource-action-btn {
+      font-size: .82rem;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      padding: .45rem 1rem;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg sticky-top" id="site-navbar"></nav>
+
+<!-- Hero -->
+<section class="resource-hero">
+  <div class="container">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-7">
+        <div class="mb-3">
+          <span class="session-badge-hero"><i class="bi bi-folder2-open"></i> Study Resources</span>
+        </div>
+        <h1 class="mb-2">My Study Resources</h1>
+        <p class="mb-3">Resources shared by your admin for your upcoming sessions. Download papers, watch videos, and prepare with confidence.</p>
+        <div class="d-flex flex-wrap gap-3">
+          <div class="d-flex align-items-center gap-2" style="color:rgba(255,255,255,.8);font-size:.85rem">
+            <i class="bi bi-info-circle"></i>
+            <span>Resources are added here once your tuition session is approved.</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <div class="row g-0" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:var(--radius)">
+          <div class="col-4 stat-mini" style="color:white">
+            <div class="stat-mini-val">0</div>
+            <div class="stat-mini-label" style="color:rgba(255,255,255,.7)">Resources</div>
+          </div>
+          <div class="col-4 stat-mini" style="color:white;border-color:rgba(255,255,255,.2)">
+            <div class="stat-mini-val">0</div>
+            <div class="stat-mini-label" style="color:rgba(255,255,255,.7)">Videos</div>
+          </div>
+          <div class="col-4 stat-mini" style="color:white;border-color:rgba(255,255,255,.2)">
+            <div class="stat-mini-val">0</div>
+            <div class="stat-mini-label" style="color:rgba(255,255,255,.7)">Papers</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Main content -->
+<section class="py-5">
+  <div class="container">
+
+    <!-- Filter bar -->
+    <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
+      <div class="d-flex flex-wrap gap-2" id="filterPills">
+        <button class="subject-filter-pill active" data-ftype="all">All Resources</button>
+        <button class="subject-filter-pill" data-ftype="video"><i class="bi bi-play-circle me-1"></i>Videos</button>
+        <button class="subject-filter-pill" data-ftype="paper"><i class="bi bi-file-text me-1"></i>Past Papers</button>
+        <button class="subject-filter-pill" data-ftype="doc"><i class="bi bi-file-earmark me-1"></i>Documents</button>
+      </div>
+      <div class="ms-auto">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input type="text" class="form-control" id="studentSearch" placeholder="Search resources…" style="min-width:170px">
+        </div>
+      </div>
+    </div>
+
+    <!-- Resources grid (empty until resources are added by admin) -->
+    <div class="row g-4" id="studentGrid"></div>
+
+    <!-- Empty state -->
+    <div class="empty-state" id="studentEmptyState">
+      <i class="bi bi-folder2-open d-block mb-3"></i>
+      <h6 class="fw-600">No resources yet</h6>
+      <p class="small text-muted">Resources will appear here once your tuition session has been approved and your admin uploads materials.</p>
+    </div>
+
+    <!-- Info bar -->
+    <div class="session-info-card mt-5">
+      <div class="d-flex align-items-start gap-3">
+        <i class="bi bi-info-circle-fill text-primary mt-1"></i>
+        <div>
+          <div class="fw-600 small" style="color:var(--dark)">About your resources</div>
+          <p class="small text-muted mb-0">These materials have been personally selected by your admin for students with confirmed sessions. New resources may be added before your session — check back regularly. If you think a resource is missing, contact us via the <a href="contact.html">help page</a>.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="py-4 mt-4" style="background:var(--dark);color:rgba(255,255,255,.6)">
+  <div class="container text-center">
+    <p class="mb-0 small">© 2025 TutorHut · <a href="contact.html" class="text-white">Contact</a> · <a href="#" class="text-white">Privacy</a></p>
+  </div>
+</footer>
+
+<!-- Video Modal -->
+<div class="modal fade" id="videoModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title fw-700" id="videoModalTitle"></h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="stopVideo()"></button>
+      </div>
+      <div class="modal-body p-3">
+        <div class="video-modal-embed">
+          <iframe id="videoFrame" src="" allowfullscreen allow="autoplay"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999">
+  <div id="stuToast" class="toast align-items-center text-bg-success border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body" id="stuToastMsg"></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+<script type="module" src="js/navbar.js"></script>
+<script>
+// ---- Filter pills ----
+document.querySelectorAll('#filterPills .subject-filter-pill').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#filterPills .subject-filter-pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applyStudentFilters();
+  });
+});
+document.getElementById('studentSearch').addEventListener('input', applyStudentFilters);
+
+function applyStudentFilters() {
+  const ftype  = document.querySelector('#filterPills .active')?.dataset.ftype || 'all';
+  const search = document.getElementById('studentSearch').value.toLowerCase();
+  const cols   = document.querySelectorAll('.res-col');
+  let visible  = 0;
+  cols.forEach(col => {
+    const matchType   = ftype === 'all' || col.dataset.rtype === ftype;
+    const matchSearch = !search || col.innerText.toLowerCase().includes(search);
+    const show = matchType && matchSearch;
+    col.classList.toggle('d-none', !show);
+    if (show) visible++;
+  });
+  document.getElementById('studentEmptyState').classList.toggle('d-none', visible > 0);
+}
+
+// ---- Video modal ----
+function openVideoModal(videoId, title) {
+  document.getElementById('videoModalTitle').textContent = title;
+  document.getElementById('videoFrame').src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+  new bootstrap.Modal(document.getElementById('videoModal')).show();
+}
+function stopVideo() {
+  document.getElementById('videoFrame').src = '';
+}
+document.getElementById('videoModal').addEventListener('hidden.bs.modal', stopVideo);
+
+// ---- Download stub ----
+function downloadResource(btn) {
+  const title = btn.closest('.resource-card-student').querySelector('h6').textContent;
+  showToast(`Downloading "${title}"…`);
+  btn.innerHTML = '<i class="bi bi-check-lg me-1"></i> Downloaded';
+  btn.classList.replace('btn-primary', 'btn-success');
+  btn.classList.replace('btn-success', 'btn-success');
+  btn.disabled = true;
+  setTimeout(() => {
+    btn.innerHTML = '<i class="bi bi-download me-1"></i> Download';
+    btn.disabled = false;
+    btn.classList.replace('btn-success','btn-primary');
+  }, 3000);
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('stuToast');
+  document.getElementById('stuToastMsg').textContent = msg;
+  new bootstrap.Toast(toast, { delay: 3000 }).show();
+}
+</script>
+</body>
+</html>

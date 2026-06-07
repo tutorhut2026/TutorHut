@@ -1,0 +1,178 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contact – TutorHut</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg sticky-top" id="site-navbar"></nav>
+
+<div class="page-header">
+  <div class="container">
+    <nav aria-label="breadcrumb"><ol class="breadcrumb mb-2"><li class="breadcrumb-item"><a href="index.html">Home</a></li><li class="breadcrumb-item active">Contact</li></ol></nav>
+    <h1>Get in Touch</h1>
+    <p>We'd love to hear from you. Reach out with any questions, feedback, or enquiries.</p>
+  </div>
+</div>
+
+<section class="section">
+  <div class="container">
+    <div class="row g-5 align-items-start">
+
+      <!-- Contact Info -->
+      <div class="col-lg-4">
+        <p class="section-label mb-3">Contact us</p>
+        <h2 class="section-title mb-3">Let's Talk</h2>
+        <p class="text-muted mb-4">Whether you're a student, tutor, or just curious about TutorHut, we're here to help.</p>
+
+        <div class="d-flex gap-3 align-items-start mb-4">
+          <div class="contact-icon-box flex-shrink-0">
+            <i class="bi bi-envelope-fill text-primary"></i>
+          </div>
+          <div>
+            <div class="fw-600 mb-1">Email</div>
+            <div class="text-muted small">hello@tutorhut.co.uk</div>
+            <div class="text-muted small">support@tutorhut.co.uk</div>
+          </div>
+        </div>
+
+        <div class="d-flex gap-3 align-items-start mb-4">
+          <div class="contact-icon-box flex-shrink-0">
+            <i class="bi bi-clock-fill text-primary"></i>
+          </div>
+          <div>
+            <div class="fw-600 mb-1">Response Time</div>
+            <div class="text-muted small">We aim to respond within 1–2 working days.</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="fw-600 small mb-2">Follow Us</div>
+        <div>
+          <a href="#" class="social-link"><i class="bi bi-twitter-x"></i></a>
+          <a href="#" class="social-link"><i class="bi bi-facebook"></i></a>
+          <a href="#" class="social-link"><i class="bi bi-instagram"></i></a>
+          <a href="#" class="social-link"><i class="bi bi-linkedin"></i></a>
+        </div>
+      </div>
+
+      <!-- Contact Form -->
+      <div class="col-lg-8">
+        <div class="card p-4 p-md-5">
+          <h4 class="fw-700 mb-1">Send us a message</h4>
+          <p class="text-muted small mb-4">We'll get back to you within 1–2 working days.</p>
+
+          <form class="th-form" novalidate>
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <label class="form-label">First Name *</label>
+                <input type="text" class="form-control" placeholder="Your first name" required />
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Last Name *</label>
+                <input type="text" class="form-control" placeholder="Your last name" required />
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Email Address *</label>
+                <input type="email" class="form-control" placeholder="you@example.com" required />
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Phone (optional)</label>
+                <input type="tel" class="form-control" placeholder="Your phone number" />
+              </div>
+              <div class="col-12">
+                <label class="form-label">I am a… *</label>
+                <select class="form-select" required>
+                  <option value="">Select role</option>
+                  <option>Student looking for a tutor</option>
+                  <option>Parent enquiring on behalf of child</option>
+                  <option>Tutor interested in joining</option>
+                  <option>General enquiry</option>
+                  <option>Press / Media</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Subject *</label>
+                <input type="text" class="form-control" placeholder="What's your message about?" required />
+              </div>
+              <div class="col-12">
+                <label class="form-label">Message *</label>
+                <textarea class="form-control" rows="5" placeholder="Write your message here..." required></textarea>
+              </div>
+            </div>
+
+            <div class="alert alert-success d-none form-success mt-3">
+              <i class="bi bi-check-circle-fill me-2"></i><strong>Message sent!</strong> Thank you for reaching out. We'll get back to you within 1–2 working days.
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg w-100 mt-4">
+              <i class="bi bi-send me-2"></i>Send Message
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAQ -->
+    <div class="mt-5">
+      <div class="text-center mb-4">
+        <p class="section-label">FAQ</p>
+        <h2 class="section-title">Frequently Asked Questions</h2>
+      </div>
+      <div class="row g-3 justify-content-center">
+        <div class="col-lg-10">
+          <div class="accordion" id="faqAccordion">
+            <div class="accordion-item border rounded-xl mb-2">
+              <h2 class="accordion-header"><button class="accordion-button fw-600" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">How do I become a tutor on TutorHut?</button></h2>
+              <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                <div class="accordion-body text-muted small">Submit an application via our <a href="tutor-register.html">Tutor Registration</a> page. Our admin team reviews your qualifications and details. Once approved, your profile is published and students can request sessions with you.</div>
+              </div>
+            </div>
+            <div class="accordion-item border rounded-xl mb-2">
+              <h2 class="accordion-header"><button class="accordion-button collapsed fw-600" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">How do I book a session as a student?</button></h2>
+              <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                <div class="accordion-body text-muted small">Browse tutors freely without an account. When you're ready to request a session, <a href="student-register.html">register as a student</a>, then submit a tuition request for your chosen tutor, subject, day, and time. Our admin team will approve and share the tutor's contact details with you.</div>
+              </div>
+            </div>
+            <div class="accordion-item border rounded-xl mb-2">
+              <h2 class="accordion-header"><button class="accordion-button collapsed fw-600" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">Why are tutor contact details hidden?</button></h2>
+              <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                <div class="accordion-body text-muted small">To protect both tutors and students, contact details are only shared once a tuition request has been reviewed and approved by our admin team. This ensures every connection on TutorHut is safe, verified, and intentional.</div>
+              </div>
+            </div>
+            <div class="accordion-item border rounded-xl">
+              <h2 class="accordion-header"><button class="accordion-button collapsed fw-600" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">How long does admin approval take?</button></h2>
+              <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                <div class="accordion-body text-muted small">Tutor applications are typically reviewed within 3–5 working days. Tuition requests are reviewed within 1–2 working days. You'll receive an email notification either way.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="row g-4">
+      <div class="col-lg-4"><span class="footer-brand">Tutor<span>Hut</span></span><p>Connecting students with verified expert tutors across a wide range of subjects.</p></div>
+      <div class="col-6 col-lg-2"><h6>Platform</h6><a href="browse-tutors.html">Browse Tutors</a><a href="tutor-register.html">Become a Tutor</a><a href="student-register.html">Register</a></div>
+      <div class="col-6 col-lg-2"><h6>Company</h6><a href="about.html">About Us</a><a href="contact.html">Contact</a><a href="#">Privacy Policy</a></div>
+      <div class="col-6 col-lg-2"><h6>Admin</h6><a href="admin-login.html">Admin Login</a><a href="admin-dashboard.html">Dashboard</a></div>
+    </div>
+    <div class="footer-bottom text-center">© 2025 TutorHut. All rights reserved.</div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+<script src="js/script.js"></script>
+<script type="module" src="js/navbar.js"></script>
+</body>
+</html>

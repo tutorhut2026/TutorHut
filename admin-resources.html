@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manage Resources – TutorHut Admin</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* Resource-specific styles */
+    .resource-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      transition: box-shadow var(--transition), transform var(--transition);
+      overflow: hidden;
+    }
+    .resource-card:hover {
+      box-shadow: var(--shadow);
+      transform: translateY(-2px);
+    }
+    .resource-thumb {
+      width: 56px;
+      height: 56px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+    .thumb-video { background: #FEE2E2; color: #EF4444; }
+    .thumb-paper { background: #EFF6FF; color: #2563EB; }
+    .thumb-doc   { background: #F0FDF4; color: #10B981; }
+    .thumb-link  { background: #FDF4FF; color: #A855F7; }
+
+    .resource-type-badge {
+      font-size: .7rem;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 20px;
+      letter-spacing: .3px;
+      text-transform: uppercase;
+    }
+    .type-video  { background:#FEE2E2; color:#B91C1C; }
+    .type-paper  { background:#EFF6FF; color:#1D4ED8; }
+    .type-doc    { background:#F0FDF4; color:#065F46; }
+    .type-link   { background:#F5F3FF; color:#6D28D9; }
+
+    .subject-filter-pill {
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: .82rem;
+      font-weight: 500;
+      background: var(--white);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .subject-filter-pill:hover,
+    .subject-filter-pill.active {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: var(--white);
+    }
+
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      text-align: center;
+      transition: border-color var(--transition), background var(--transition);
+      cursor: pointer;
+    }
+    .upload-zone:hover {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+    .upload-zone i { font-size: 2rem; color: var(--muted); }
+
+    .student-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--light);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: .78rem;
+      font-weight: 500;
+      color: var(--mid);
+    }
+    .student-tag .remove-tag {
+      cursor: pointer;
+      color: var(--muted);
+      font-size: .8rem;
+      line-height: 1;
+    }
+    .student-tag .remove-tag:hover { color: var(--danger); }
+
+    .resource-meta {
+      font-size: .78rem;
+      color: var(--muted);
+    }
+
+    .visibility-badge {
+      font-size: .7rem;
+      padding: 3px 8px;
+      border-radius: 20px;
+    }
+    .vis-all      { background:#F0FDF4; color:#065F46; }
+    .vis-specific { background:#FDF4FF; color:#6D28D9; }
+
+    .empty-state {
+      padding: 4rem 2rem;
+      text-align: center;
+      color: var(--muted);
+    }
+    .empty-state i { font-size: 3rem; opacity: .3; }
+
+    #resourceTypeHelp {
+      font-size: .78rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* Stats row */
+    .resource-stat {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: .85rem;
+    }
+    .res-stat-icon {
+      width: 42px; height: 42px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="d-flex flex-column flex-lg-row min-vh-100">
+
+  <!-- Sidebar -->
+  <aside class="dash-sidebar" style="width:240px;flex-shrink:0">
+    <a href="index.html" class="brand d-block">Tutor<span>Hut</span>
+      <small class="d-block fw-400" style="font-size:.7rem;color:rgba(255,255,255,.4);font-family:var(--font-body)">Admin Panel</small>
+    </a>
+    <nav class="dash-nav mt-2">
+      <ul class="nav flex-column">
+        <li class="nav-item"><a href="admin-dashboard.html" class="nav-link"><i class="bi bi-grid-1x2"></i> Dashboard</a></li>
+        <li class="nav-item"><a href="tutor-approval.html" class="nav-link"><i class="bi bi-person-check"></i> Tutor Approvals</a></li>
+        <li class="nav-item"><a href="request-approval.html" class="nav-link"><i class="bi bi-clipboard-check"></i> Tuition Requests</a></li>
+        <li class="nav-item"><a href="browse-tutors.html" class="nav-link"><i class="bi bi-people"></i> All Tutors</a></li>
+        <li class="nav-item"><a href="admin-resources.html" class="nav-link active"><i class="bi bi-folder2-open"></i> Resources</a></li>
+        <li class="nav-item"><a href="#" class="nav-link pe-none opacity-50"><i class="bi bi-bar-chart"></i> Reports</a></li>
+        <li class="nav-item mt-3"><a href="admin-login.html" class="nav-link text-danger"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="dash-main flex-grow-1">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+      <div>
+        <h4 class="fw-700 mb-0">Study Resources</h4>
+        <p class="text-muted small mb-0">Upload and manage materials for approved students with booked sessions</p>
+      </div>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addResourceModal">
+        <i class="bi bi-plus-lg me-1"></i> Add Resource
+      </button>
+    </div>
+
+    <!-- Stats -->
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-lg-3">
+        <div class="resource-stat">
+          <div class="res-stat-icon" style="background:#EFF6FF"><i class="bi bi-folder2-open" style="color:var(--primary)"></i></div>
+          <div><div class="fw-700" style="font-size:1.3rem;color:var(--dark)">0</div><div class="small text-muted">Total Resources</div></div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="resource-stat">
+          <div class="res-stat-icon" style="background:#FEE2E2"><i class="bi bi-play-btn" style="color:#EF4444"></i></div>
+          <div><div class="fw-700" style="font-size:1.3rem;color:var(--dark)">0</div><div class="small text-muted">YouTube Videos</div></div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="resource-stat">
+          <div class="res-stat-icon" style="background:#EFF6FF"><i class="bi bi-file-earmark-text" style="color:#2563EB"></i></div>
+          <div><div class="fw-700" style="font-size:1.3rem;color:var(--dark)">0</div><div class="small text-muted">Past Papers</div></div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="resource-stat">
+          <div class="res-stat-icon" style="background:#F0FDF4"><i class="bi bi-people" style="color:#10B981"></i></div>
+          <div><div class="fw-700" style="font-size:1.3rem;color:var(--dark)">0</div><div class="small text-muted">Students w/ Access</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+      <div class="card-body d-flex flex-wrap align-items-center gap-3">
+        <span class="fw-600 small text-muted text-uppercase" style="letter-spacing:.5px">Filter by:</span>
+
+        <!-- Subject pills -->
+        <div class="d-flex flex-wrap gap-2" id="subjectFilters">
+          <button class="subject-filter-pill active" data-filter="subject" data-value="all">All Subjects</button>
+          <button class="subject-filter-pill" data-filter="subject" data-value="maths">Maths</button>
+          <button class="subject-filter-pill" data-filter="subject" data-value="english">English</button>
+          <button class="subject-filter-pill" data-filter="subject" data-value="science">Science</button>
+          <button class="subject-filter-pill" data-filter="subject" data-value="chemistry">Chemistry</button>
+          <button class="subject-filter-pill" data-filter="subject" data-value="biology">Biology</button>
+          <button class="subject-filter-pill" data-filter="subject" data-value="physics">Physics</button>
+          <button class="subject-filter-pill" data-filter="subject" data-value="history">History</button>
+        </div>
+
+        <!-- Type filter -->
+        <div class="ms-lg-auto">
+          <select class="form-select form-select-sm" id="typeFilter" style="min-width:150px">
+            <option value="all">All Types</option>
+            <option value="video">YouTube Videos</option>
+            <option value="paper">Past Papers</option>
+            <option value="doc">Documents</option>
+            <option value="link">External Links</option>
+          </select>
+        </div>
+
+        <!-- Search -->
+        <div>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control" id="resourceSearch" placeholder="Search resources…" style="min-width:180px">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resources Grid -->
+    <div class="row g-3" id="resourcesGrid">
+    </div><!-- /resourcesGrid -->
+
+    <!-- Empty state (shown by default) -->
+    <div class="empty-state" id="emptyState">
+      <i class="bi bi-folder2-open d-block mb-3"></i>
+      <h6 class="fw-600">No resources found</h6>
+      <p class="small text-muted">Try adjusting your filters or add a new resource.</p>
+      <button class="btn btn-primary btn-sm mt-2" data-bs-toggle="modal" data-bs-target="#addResourceModal">
+        <i class="bi bi-plus-lg me-1"></i> Add Resource
+      </button>
+    </div>
+
+  </main>
+</div>
+
+
+<!-- ===== Add Resource Modal ===== -->
+<div class="modal fade" id="addResourceModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-700"><i class="bi bi-plus-circle me-2 text-primary"></i>Add New Resource</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+
+        <!-- Resource Type -->
+        <div class="mb-4">
+          <label class="form-label fw-600">Resource Type <span class="text-danger">*</span></label>
+          <div class="d-flex flex-wrap gap-2" id="resourceTypePicker">
+            <button type="button" class="subject-filter-pill active" data-rtype="video" onclick="pickType(this)">
+              <i class="bi bi-play-circle me-1"></i> YouTube Video
+            </button>
+            <button type="button" class="subject-filter-pill" data-rtype="paper" onclick="pickType(this)">
+              <i class="bi bi-file-earmark-text me-1"></i> Past Paper
+            </button>
+            <button type="button" class="subject-filter-pill" data-rtype="doc" onclick="pickType(this)">
+              <i class="bi bi-file-earmark-richtext me-1"></i> Document
+            </button>
+            <button type="button" class="subject-filter-pill" data-rtype="link" onclick="pickType(this)">
+              <i class="bi bi-link-45deg me-1"></i> External Link
+            </button>
+          </div>
+        </div>
+
+        <div class="row g-3">
+          <!-- Title -->
+          <div class="col-12">
+            <label class="form-label fw-600">Resource Title <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="resourceTitle" placeholder="e.g. AQA Maths GCSE – 2023 Paper 1">
+          </div>
+
+          <!-- Subject -->
+          <div class="col-md-6">
+            <label class="form-label fw-600">Subject <span class="text-danger">*</span></label>
+            <select class="form-select" id="resourceSubject">
+              <option value="">Select subject…</option>
+              <option>Maths</option>
+              <option>English</option>
+              <option>Science</option>
+              <option>Chemistry</option>
+              <option>Biology</option>
+              <option>Physics</option>
+              <option>History</option>
+              <option>Geography</option>
+              <option>French</option>
+              <option>Spanish</option>
+            </select>
+          </div>
+
+          <!-- Year Group -->
+          <div class="col-md-6">
+            <label class="form-label fw-600">Target Year Group</label>
+            <select class="form-select" id="resourceYear">
+              <option value="">All year groups</option>
+              <option>Year 7–8</option>
+              <option>Year 9</option>
+              <option>Year 10–11 (GCSE)</option>
+              <option>Year 12–13 (A-Level)</option>
+            </select>
+          </div>
+
+          <!-- URL (video/link) or file upload (paper/doc) -->
+          <div class="col-12" id="urlField">
+            <label class="form-label fw-600">YouTube / Video URL <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
+              <input type="url" class="form-control" id="resourceUrl" placeholder="https://www.youtube.com/watch?v=…">
+            </div>
+            <div id="resourceTypeHelp">Paste the full YouTube video URL. Students will be able to watch it directly from their portal.</div>
+          </div>
+
+          <div class="col-12 d-none" id="fileField">
+            <label class="form-label fw-600">Upload File <span class="text-danger">*</span></label>
+            <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+              <i class="bi bi-cloud-arrow-up d-block mb-2"></i>
+              <div class="fw-600 small" style="color:var(--mid)">Click to upload or drag &amp; drop</div>
+              <div class="text-muted" style="font-size:.78rem">PDF, DOC, DOCX up to 20 MB</div>
+              <div id="fileNameDisplay" class="mt-2 small text-primary d-none"></div>
+            </div>
+            <input type="file" id="fileInput" class="d-none" accept=".pdf,.doc,.docx" onchange="showFileName(this)">
+          </div>
+
+          <!-- Description -->
+          <div class="col-12">
+            <label class="form-label fw-600">Description</label>
+            <textarea class="form-control" rows="3" id="resourceDesc" placeholder="Briefly describe what this resource covers and how it helps students…"></textarea>
+          </div>
+
+          <!-- Visibility -->
+          <div class="col-12">
+            <label class="form-label fw-600">Visibility <span class="text-danger">*</span></label>
+            <div class="d-flex gap-3 flex-wrap">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="visibility" id="visAll" value="all" checked onchange="toggleStudentSelect(this)">
+                <label class="form-check-label" for="visAll">
+                  <span class="fw-500">All approved students</span>
+                  <div class="text-muted" style="font-size:.75rem">Anyone with a booked session can view this</div>
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="visibility" id="visSpecific" value="specific" onchange="toggleStudentSelect(this)">
+                <label class="form-check-label" for="visSpecific">
+                  <span class="fw-500">Specific students only</span>
+                  <div class="text-muted" style="font-size:.75rem">Handpick which students can access this</div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Student selector (shown when specific) -->
+          <div class="col-12 d-none" id="studentSelectorWrap">
+            <label class="form-label fw-600">Assign Students</label>
+            <select class="form-select" id="studentSelector" multiple style="height:120px">
+              <option disabled>No approved students yet</option>
+            </select>
+            <div class="text-muted mt-1" style="font-size:.75rem">Hold Ctrl / Cmd to select multiple students</div>
+          </div>
+
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="saveResource()">
+          <i class="bi bi-check-lg me-1"></i> Save Resource
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ===== Delete Confirm Modal ===== -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content text-center p-4">
+      <div class="mb-3">
+        <div class="res-stat-icon mx-auto mb-3" style="background:#FEE2E2;width:52px;height:52px"><i class="bi bi-trash3" style="color:#EF4444;font-size:1.3rem"></i></div>
+        <h6 class="fw-700">Delete Resource?</h6>
+        <p class="small text-muted mb-0">This will remove the resource for all students. This action cannot be undone.</p>
+      </div>
+      <div class="d-flex gap-2 justify-content-center">
+        <button class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-danger btn-sm" id="confirmDeleteBtn">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999">
+  <div id="resToast" class="toast align-items-center text-bg-success border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body" id="resToastMsg">Resource saved successfully!</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+<script>
+// ---- Subject filter pills ----
+document.querySelectorAll('[data-filter="subject"]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-filter="subject"]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applyFilters();
+  });
+});
+document.getElementById('typeFilter').addEventListener('change', applyFilters);
+document.getElementById('resourceSearch').addEventListener('input', applyFilters);
+
+function applyFilters() {
+  const subject = document.querySelector('[data-filter="subject"].active')?.dataset.value || 'all';
+  const type    = document.getElementById('typeFilter').value;
+  const search  = document.getElementById('resourceSearch').value.toLowerCase();
+  const rows    = document.querySelectorAll('#resourcesGrid > .col-12');
+  let visible   = 0;
+  rows.forEach(row => {
+    const matchSubject = subject === 'all' || row.dataset.subject === subject;
+    const matchType    = type === 'all' || row.dataset.type === type;
+    const matchSearch  = !search || row.innerText.toLowerCase().includes(search);
+    const show = matchSubject && matchType && matchSearch;
+    row.classList.toggle('d-none', !show);
+    if (show) visible++;
+  });
+  document.getElementById('emptyState').classList.toggle('d-none', visible > 0);
+}
+
+// ---- Resource type picker in modal ----
+function pickType(btn) {
+  document.querySelectorAll('#resourceTypePicker .subject-filter-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const rtype = btn.dataset.rtype;
+  const urlField  = document.getElementById('urlField');
+  const fileField = document.getElementById('fileField');
+  const help      = document.getElementById('resourceTypeHelp');
+  if (rtype === 'video' || rtype === 'link') {
+    urlField.classList.remove('d-none');
+    fileField.classList.add('d-none');
+    help.textContent = rtype === 'video'
+      ? 'Paste the full YouTube video URL. Students will be able to watch it directly from their portal.'
+      : 'Paste the external URL. Students will be directed to this link.';
+    document.querySelector('#urlField label').innerHTML = (rtype === 'video' ? 'YouTube / Video URL' : 'External URL') + ' <span class="text-danger">*</span>';
+  } else {
+    urlField.classList.add('d-none');
+    fileField.classList.remove('d-none');
+  }
+}
+
+// ---- Visibility toggle ----
+function toggleStudentSelect(radio) {
+  const wrap = document.getElementById('studentSelectorWrap');
+  wrap.classList.toggle('d-none', radio.value !== 'specific');
+}
+
+// ---- File name display ----
+function showFileName(input) {
+  const display = document.getElementById('fileNameDisplay');
+  if (input.files.length > 0) {
+    display.textContent = '✓ ' + input.files[0].name;
+    display.classList.remove('d-none');
+  }
+}
+
+// ---- Save resource ----
+function saveResource() {
+  const title = document.getElementById('resourceTitle').value.trim();
+  const subject = document.getElementById('resourceSubject').value;
+  if (!title || !subject) {
+    alert('Please fill in all required fields.');
+    return;
+  }
+  const rtype = document.querySelector('#resourceTypePicker .active')?.dataset.rtype || 'video';
+  const desc  = document.getElementById('resourceDesc').value.trim();
+  const vis   = document.querySelector('input[name="visibility"]:checked').value;
+
+  // Build new card
+  const thumbClass = { video:'thumb-video', paper:'thumb-paper', doc:'thumb-doc', link:'thumb-link' }[rtype];
+  const icon       = { video:'bi-play-circle-fill', paper:'bi-file-earmark-text-fill', doc:'bi-file-earmark-richtext-fill', link:'bi-link-45deg' }[rtype];
+  const badgeClass = { video:'type-video', paper:'type-paper', doc:'type-doc', link:'type-link' }[rtype];
+  const badgeLabel = { video:'Video', paper:'Past Paper', doc:'Document', link:'External Link' }[rtype];
+  const visBadge   = vis === 'all'
+    ? '<span class="visibility-badge vis-all">All Students</span>'
+    : '<span class="visibility-badge vis-specific">Selected Students</span>';
+
+  const col = document.createElement('div');
+  col.className = 'col-12';
+  col.dataset.subject = subject.toLowerCase();
+  col.dataset.type    = rtype;
+  col.innerHTML = `
+    <div class="resource-card p-3 d-flex align-items-start gap-3">
+      <div class="resource-thumb ${thumbClass}"><i class="bi ${icon}"></i></div>
+      <div class="flex-grow-1 min-w-0">
+        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+          <span class="fw-600" style="color:var(--dark)">${title}</span>
+          <span class="resource-type-badge ${badgeClass}">${badgeLabel}</span>
+          ${visBadge}
+        </div>
+        <div class="resource-meta mb-2">
+          <i class="bi bi-mortarboard me-1"></i>${subject} &nbsp;·&nbsp;
+          <i class="bi bi-calendar3 me-1"></i>Added today
+        </div>
+        ${desc ? `<p class="small text-muted mb-0">${desc}</p>` : ''}
+      </div>
+      <div class="d-flex flex-column gap-2 ms-2 flex-shrink-0">
+        <button class="btn btn-outline-primary btn-sm" onclick="openEditModal(this)"><i class="bi bi-pencil"></i></button>
+        <button class="btn btn-outline-danger btn-sm" onclick="deleteResource(this)"><i class="bi bi-trash3"></i></button>
+      </div>
+    </div>`;
+
+  document.getElementById('resourcesGrid').prepend(col);
+  bootstrap.Modal.getInstance(document.getElementById('addResourceModal')).hide();
+  applyFilters();
+  showToast('Resource added successfully!', 'success');
+
+  // Reset form
+  document.getElementById('resourceTitle').value = '';
+  document.getElementById('resourceSubject').value = '';
+  document.getElementById('resourceDesc').value = '';
+  document.getElementById('resourceUrl').value = '';
+  document.getElementById('visAll').checked = true;
+  document.getElementById('studentSelectorWrap').classList.add('d-none');
+  document.getElementById('fileNameDisplay').classList.add('d-none');
+}
+
+// ---- Delete ----
+let pendingDeleteRow = null;
+function deleteResource(btn) {
+  pendingDeleteRow = btn.closest('.col-12');
+  new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
+  if (pendingDeleteRow) {
+    pendingDeleteRow.remove();
+    pendingDeleteRow = null;
+    applyFilters();
+    bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+    showToast('Resource deleted.', 'danger');
+  }
+});
+
+// ---- Edit (stub) ----
+function openEditModal(btn) {
+  showToast('Edit panel coming soon!', 'info');
+}
+
+// ---- Remove student tag ----
+function removeTag(el) {
+  el.closest('.student-tag').remove();
+}
+
+// ---- Add student tag (stub) ----
+function addStudentTag(btn) {
+  const name = prompt('Enter student name:');
+  if (!name) return;
+  const tag = document.createElement('span');
+  tag.className = 'student-tag';
+  tag.innerHTML = `<i class="bi bi-person-fill"></i> ${name} <span class="remove-tag" onclick="removeTag(this)">×</span>`;
+  btn.parentNode.insertBefore(tag, btn);
+}
+
+// ---- Toast ----
+function showToast(msg, type='success') {
+  const toast = document.getElementById('resToast');
+  const body  = document.getElementById('resToastMsg');
+  toast.className = `toast align-items-center border-0 ${type === 'danger' ? 'text-bg-danger' : type === 'info' ? 'text-bg-primary' : 'text-bg-success'}`;
+  body.textContent = msg;
+  new bootstrap.Toast(toast, { delay: 3000 }).show();
+}
+
+// Tooltip init
+document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
+</script>
+</body>
+</html>
