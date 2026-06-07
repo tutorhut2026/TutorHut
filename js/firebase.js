@@ -79,12 +79,19 @@ export async function updateTutorField(id, field, value) {
   return sheetsGet({ action: "update_field", sheet: "Applications", id, field, value });
 }
 
-export async function deleteTutorApplication(id) {
-  return sheetsGet({ action: "delete_row", sheet: "Applications", id });
+export async function deleteTutorApplication(id, uid) {
+  // Step 1: mark as removed so the login check blocks them immediately,
+  // even if the row deletion below fails for any reason.
+  await updateApplicationStatus(id, "removed");
+  // Step 2: delete the row from Sheets (also triggers Firebase Auth deletion
+  // in the Apps Script if FIREBASE_SERVICE_ACCOUNT is configured there).
+  return sheetsGet({ action: "delete_row", sheet: "Applications", id, uid: uid || "" });
 }
 
 export async function getTutorByUid(uid) {
-  return sheetsGet({ action: "get_tutor_by_uid", uid });
+  // sheetsGet always returns an array; extract the first match or null.
+  const results = await sheetsGet({ action: "get_tutor_by_uid", uid });
+  return Array.isArray(results) && results.length > 0 ? results[0] : null;
 }
 
 /* ── Student Requests ── */

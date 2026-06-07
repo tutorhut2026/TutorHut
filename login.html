@@ -167,9 +167,17 @@
         if (email === ADMIN_EMAIL) {
           redirect = "admin-dashboard.html";
         } else if (dn.startsWith("tutor:")) {
-          // Check if frozen/banned before allowing in
+          // Check Sheets record: deleted tutors have no record; frozen/removed ones are blocked.
           const record = await getTutorByUid(user.uid);
-          if (record && (record.status === "frozen" || record.status === "banned" || record.status === "removed")) {
+          if (record === null) {
+            await signOut(auth);
+            err.textContent = "No tutor account found. Your application may have been removed. Please contact TutorHut admin.";
+            err.classList.remove("d-none");
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-box-arrow-in-right me-2"></i>Sign In';
+            return;
+          }
+          if (record.status === "frozen" || record.status === "banned" || record.status === "removed") {
             await signOut(auth);
             err.textContent = "Your account has been suspended. Please contact TutorHut admin.";
             err.classList.remove("d-none");

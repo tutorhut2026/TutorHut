@@ -123,7 +123,7 @@
       </div>
       <div class="modal-body">
         <p>Are you sure you want to remove <strong id="delete-tutor-name"></strong> from the site?</p>
-        <p class="small text-muted mb-0">This removes all their data from TutorHut. Their Firebase login account will remain — they would need a new email to re-register.</p>
+        <p class="small text-muted mb-0">This removes their record from Google Sheets and the website. Their login will be blocked immediately. If the Apps Script has a Firebase service account configured, their authentication account will also be deleted.</p>
       </div>
       <div class="modal-footer border-0">
         <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
@@ -143,7 +143,8 @@
   } from "./js/firebase.js";
 
   let allApps = [];
-  let currentId = null;
+  let currentId  = null;
+  let currentUid = null;
 
   window.loadApplications = loadApplications;
 
@@ -345,7 +346,7 @@
         </div>
       </div>`;
 
-    document.getElementById("modal-delete-btn").onclick = () => confirmDelete(id, app.name);
+    document.getElementById("modal-delete-btn").onclick = () => confirmDelete(id, app.uid, app.name);
     new bootstrap.Modal(document.getElementById("tutorModal")).show();
   };
 
@@ -357,8 +358,9 @@
     loadApplications();
   };
 
-  window.confirmDelete = function(id, name) {
-    currentId = id;
+  window.confirmDelete = function(id, uid, name) {
+    currentId  = id;
+    currentUid = uid || null;
     document.getElementById("delete-tutor-name").textContent = name || "this tutor";
     bootstrap.Modal.getInstance(document.getElementById("tutorModal"))?.hide();
     setTimeout(() => new bootstrap.Modal(document.getElementById("deleteModal")).show(), 300);
@@ -369,9 +371,10 @@
     const btn = document.getElementById("confirm-delete-btn");
     btn.disabled = true;
     btn.textContent = "Deleting…";
-    await deleteTutorApplication(currentId);
+    await deleteTutorApplication(currentId, currentUid);
     bootstrap.Modal.getInstance(document.getElementById("deleteModal"))?.hide();
-    currentId = null;
+    currentId  = null;
+    currentUid = null;
     btn.disabled = false;
     btn.textContent = "Delete";
     loadApplications();
