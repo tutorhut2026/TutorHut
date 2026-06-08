@@ -186,25 +186,20 @@ function doGet(e) {
       case 'delete_row': {
         var sh3 = getSheet(p.sheet || 'Applications');
         var row3 = findRowIndex(sh3, p.id);
-        if (row3 < 0) return jsonOut({ ok: false, error: 'Row not found', id: p.id });
+        if (row3 < 0) return jsonOut({ ok: false, rowDeleted: false, error: 'Row not found', id: p.id });
 
-        // Try Firebase Auth deletion first (before touching the row).
-        // null  = service account not configured → skip, delete row anyway
-        // true  = Auth account deleted → safe to delete row
-        // false = Auth deletion failed → keep row, tell admin
+        // Delete the Sheets row first — this is the primary action.
+        sh3.deleteRow(row3);
+        SpreadsheetApp.flush(); // force the write to commit immediately
+
+        // Then attempt Firebase Auth deletion (best-effort secondary action).
+        // null  = service account not configured → skip (tutor can't log in but can re-register)
+        // true  = Auth account fully deleted → can re-register with same email
+        // false = Auth deletion failed → admin sees a warning
         var authResult = null;
         if (p.uid) authResult = deleteFirebaseAuthUser(p.uid);
 
-        if (authResult === false) {
-          // Auth deletion was attempted but failed — leave the row intact so
-          // the tutor stays visible and manageable from the dashboard.
-          return jsonOut({ ok: false, authDeleted: false,
-            error: 'Firebase Auth deletion failed. Tutor record kept. Check Apps Script logs.' });
-        }
-
-        // Auth deleted (true) or service account not configured (null) → delete row
-        sh3.deleteRow(row3);
-        return jsonOut({ ok: true, authDeleted: authResult === true });
+        return jsonOut({ ok: true, rowDeleted: true, authDeleted: authResult === true });
       }
 
       case 'get_requests':

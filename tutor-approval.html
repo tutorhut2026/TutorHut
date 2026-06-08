@@ -381,20 +381,22 @@
     btn.textContent = "Delete";
 
     if (result && result.ok) {
-      // Row deleted — show what happened with Auth
-      if (result.authDeleted === false) {
+      // Row deleted successfully — check Auth outcome
+      if (!result.authDeleted) {
         showDeleteAlert("warning",
-          "Tutor removed from the site, but their Firebase login account could not be deleted. " +
-          "They cannot log in, but they also cannot re-register with the same email. " +
-          "To fully free up their email, delete the account manually in the Firebase Console → Authentication.");
+          "Tutor removed from the site and blocked from logging in. " +
+          "However, their Firebase Auth account could not be deleted — " +
+          "they cannot re-register with the same email until you remove it manually " +
+          "in Firebase Console → Authentication.");
       }
-      // authDeleted === true → fully deleted (can re-register). No extra message needed.
+      // authDeleted === true → fully deleted, can re-register. No message needed.
     } else {
-      // Row was kept — Auth deletion failed
+      // Something failed — show whatever error we have
+      const msg = (result && result.error) || "Unknown error.";
       showDeleteAlert("danger",
-        "Deletion failed: could not remove the Firebase Auth account. " +
-        "The tutor record has been kept so you can retry or freeze them from the dashboard. " +
-        "Check the Apps Script execution logs for details.");
+        "Deletion failed: " + msg + " " +
+        "The tutor record may still be in Sheets. Refresh the page and try again, " +
+        "or check the Apps Script execution logs for details.");
     }
 
     loadApplications();
