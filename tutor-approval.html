@@ -371,14 +371,45 @@
     const btn = document.getElementById("confirm-delete-btn");
     btn.disabled = true;
     btn.textContent = "Deleting…";
-    await deleteTutorApplication(currentId, currentUid);
+
+    const result = await deleteTutorApplication(currentId, currentUid);
+
     bootstrap.Modal.getInstance(document.getElementById("deleteModal"))?.hide();
     currentId  = null;
     currentUid = null;
     btn.disabled = false;
     btn.textContent = "Delete";
+
+    if (result && result.ok) {
+      // Row deleted — show what happened with Auth
+      if (result.authDeleted === false) {
+        showDeleteAlert("warning",
+          "Tutor removed from the site, but their Firebase login account could not be deleted. " +
+          "They cannot log in, but they also cannot re-register with the same email. " +
+          "To fully free up their email, delete the account manually in the Firebase Console → Authentication.");
+      }
+      // authDeleted === true → fully deleted (can re-register). No extra message needed.
+    } else {
+      // Row was kept — Auth deletion failed
+      showDeleteAlert("danger",
+        "Deletion failed: could not remove the Firebase Auth account. " +
+        "The tutor record has been kept so you can retry or freeze them from the dashboard. " +
+        "Check the Apps Script execution logs for details.");
+    }
+
     loadApplications();
   });
+
+  function showDeleteAlert(type, message) {
+    const existing = document.getElementById("delete-result-alert");
+    if (existing) existing.remove();
+    const alert = document.createElement("div");
+    alert.id = "delete-result-alert";
+    alert.className = "alert alert-" + type + " alert-dismissible mt-3";
+    alert.innerHTML = message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+    document.querySelector(".dash-main").prepend(alert);
+    setTimeout(() => alert.remove(), 12000);
+  }
 </script>
 </body>
 </html>

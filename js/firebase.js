@@ -80,12 +80,18 @@ export async function updateTutorField(id, field, value) {
 }
 
 export async function deleteTutorApplication(id, uid) {
-  // Step 1: mark as removed so the login check blocks them immediately,
-  // even if the row deletion below fails for any reason.
-  await updateApplicationStatus(id, "removed");
-  // Step 2: delete the row from Sheets (also triggers Firebase Auth deletion
-  // in the Apps Script if FIREBASE_SERVICE_ACCOUNT is configured there).
-  return sheetsGet({ action: "delete_row", sheet: "Applications", id, uid: uid || "" });
+  // The Apps Script deletes Firebase Auth first, then the Sheets row.
+  // If Auth deletion fails the row is kept and { ok: false } is returned
+  // so the admin can see the error and the tutor stays manageable.
+  try {
+    const url  = SHEETS_URL + "?" + new URLSearchParams({ action: "delete_row", sheet: "Applications", id, uid: uid || "" });
+    const res  = await fetch(url);
+    const data = await res.json();
+    return data; // { ok, authDeleted?, error? }
+  } catch (e) {
+    console.warn("deleteTutorApplication failed:", e);
+    return { ok: false, error: "Network error" };
+  }
 }
 
 export async function getTutorByUid(uid) {

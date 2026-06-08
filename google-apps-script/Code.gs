@@ -13,7 +13,8 @@
       Copy the /exec URL into firebase.js as SHEETS_URL
 
    FIREBASE AUTH DELETION (optional – for full account removal):
-   1. Go to Google Cloud Console → IAM → Service Accounts
+   1. Go to Google Cloud Console →
+    IAM → Service Accounts
    2. Create a service account with "Firebase Admin" role
    3. Download the JSON key
    4. In Apps Script: Project Settings → Script Properties
@@ -91,7 +92,7 @@ function b64url(data) {
 function deleteFirebaseAuthUser(uid) {
   try {
     var raw = PropertiesService.getScriptProperties().getProperty('FIREBASE_SERVICE_ACCOUNT');
-    if (!raw) return false;
+    if (!raw) return null; // not configured — caller treats this as "skip"
     var sa = JSON.parse(raw);
 
     // Build a signed JWT to exchange for an OAuth2 access token
@@ -135,8 +136,10 @@ function deleteFirebaseAuthUser(uid) {
         muteHttpExceptions: true
       }
     );
-    Logger.log('Firebase Auth delete: ' + delRes.getResponseCode() + ' ' + delRes.getContentText());
-    return delRes.getResponseCode() === 200;
+    var code = delRes.getResponseCode();
+    Logger.log('Firebase Auth delete: ' + code + ' ' + delRes.getContentText());
+    // 200 = deleted, 404 = already gone (treat as success so delete is idempotent)
+    return (code === 200 || code === 404);
   } catch (err) {
     Logger.log('deleteFirebaseAuthUser error: ' + err);
     return false;
@@ -183,13 +186,25 @@ function doGet(e) {
       case 'delete_row': {
         var sh3 = getSheet(p.sheet || 'Applications');
         var row3 = findRowIndex(sh3, p.id);
-        if (row3 > 0) {
-          sh3.deleteRow(row3);
-          // Attempt Firebase Auth deletion if service account is configured
-          if (p.uid) deleteFirebaseAuthUser(p.uid);
-          return jsonOut({ ok: true });
+        if (row3 < 0) return jsonOut({ ok: false, error: 'Row not found', id: p.id });
+
+        // Try Firebase Auth deletion first (before touching the row).
+        // null  = service account not configured → skip, delete row anyway
+        // true  = Auth account deleted → safe to delete row
+        // false = Auth deletion failed → keep row, tell admin
+        var authResult = null;
+        if (p.uid) authResult = deleteFirebaseAuthUser(p.uid);
+
+        if (authResult === false) {
+          // Auth deletion was attempted but failed — leave the row intact so
+          // the tutor stays visible and manageable from the dashboard.
+          return jsonOut({ ok: false, authDeleted: false,
+            error: 'Firebase Auth deletion failed. Tutor record kept. Check Apps Script logs.' });
         }
-        return jsonOut({ ok: false, error: 'Row not found', id: p.id });
+
+        // Auth deleted (true) or service account not configured (null) → delete row
+        sh3.deleteRow(row3);
+        return jsonOut({ ok: true, authDeleted: authResult === true });
       }
 
       case 'get_requests':
