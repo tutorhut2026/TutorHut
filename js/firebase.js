@@ -25,7 +25,7 @@ export {
   onAuthStateChanged, updateProfile, signOut
 };
 
-export const SHEETS_URL  = "https://script.google.com/macros/s/AKfycbwan5IHb7NYCeqjvS34PdewngOHBZpcSu5XfqzqTfRnOinrKU-PwPX91tWAoo-wLNnz/exec";
+export const SHEETS_URL  = "https://script.google.com/macros/s/AKfycbwSrtU4mu1NzhW4Hl0jhAykSvDJB_XSA5FBCHPifZ62UqoyB3zQiCBFKXwye1BdGTNJhw/exec";
 export const ADMIN_EMAIL = "admin@tutorhut.com";
 
 function genId() {
