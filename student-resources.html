@@ -157,6 +157,7 @@
       padding: .45rem 1rem;
     }
   </style>
+  <script>if(localStorage.theme==='dark'||(!localStorage.theme&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.dataset.theme='dark'</script>
 </head>
 <body>
 
@@ -338,5 +339,6 @@ function showToast(msg) {
   new bootstrap.Toast(toast, { delay: 3000 }).show();
 }
 </script>
+<script src="js/theme.js"></script>
 </body>
 </html>

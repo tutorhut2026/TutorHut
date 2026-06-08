@@ -145,6 +145,7 @@
       font-size: 1.1rem;
     }
   </style>
+  <script>if(localStorage.theme==='dark'||(!localStorage.theme&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.dataset.theme='dark'</script>
 </head>
 <body>
 
@@ -604,5 +605,6 @@ function showToast(msg, type='success') {
 // Tooltip init
 document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
 </script>
+<script src="js/theme.js"></script>
 </body>
 </html>

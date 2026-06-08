@@ -715,3 +715,131 @@ footer a:hover { color: white; }
   .hero-title { font-size: 1.85rem; }
   .section-title { font-size: 1.5rem; }
 }
+
+/* =============================================
+   Dark Mode
+   ============================================= */
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --white:         #1E293B;
+  --light:         #0F172A;
+  --dark:          #F1F5F9;
+  --mid:           #CBD5E1;
+  --muted:         #94A3B8;
+  --border:        #334155;
+  --primary-light: rgba(37,99,235,.18);
+  --accent-light:  rgba(245,158,11,.15);
+  --shadow-sm:     0 1px 3px rgba(0,0,0,.4),  0 1px 2px rgba(0,0,0,.3);
+  --shadow:        0 4px 16px rgba(0,0,0,.45);
+  --shadow-lg:     0 8px 32px rgba(0,0,0,.55);
+}
+
+/* Hardcoded light gradients / backgrounds */
+[data-theme="dark"] .hero {
+  background: linear-gradient(135deg, #0D1B2E 0%, #1A2744 100%);
+}
+[data-theme="dark"] .hero::before {
+  background: radial-gradient(circle, rgba(37,99,235,.12) 0%, transparent 70%);
+}
+[data-theme="dark"] .auth-wrapper {
+  background: linear-gradient(135deg, #0F172A 0%, #1A2744 100%);
+}
+[data-theme="dark"] .page-header {
+  background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+}
+
+/* Bootstrap form controls */
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select {
+  background-color: #0F172A;
+  color: var(--dark);
+  border-color: var(--border);
+}
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] .form-select:focus {
+  background-color: #0F172A;
+  color: var(--dark);
+}
+[data-theme="dark"] .form-control::placeholder    { color: var(--muted); }
+[data-theme="dark"] .form-control:disabled,
+[data-theme="dark"] .form-control[readonly]       { background-color: #1E293B; color: var(--muted); }
+[data-theme="dark"] .input-group-text             { background-color: #0F172A; border-color: var(--border); color: var(--muted); }
+[data-theme="dark"] .form-check-input             { background-color: #0F172A; border-color: var(--border); }
+[data-theme="dark"] .form-check-input:checked     { background-color: var(--primary); border-color: var(--primary); }
+
+/* Bootstrap modal */
+[data-theme="dark"] .modal-content               { background-color: var(--white); border-color: var(--border); color: var(--mid); }
+[data-theme="dark"] .modal-header,
+[data-theme="dark"] .modal-footer                { border-color: var(--border); }
+
+/* Bootstrap dropdown */
+[data-theme="dark"] .dropdown-menu               { background-color: var(--white); border-color: var(--border); }
+[data-theme="dark"] .dropdown-item               { color: var(--mid); }
+[data-theme="dark"] .dropdown-item:hover,
+[data-theme="dark"] .dropdown-item:focus         { background-color: var(--light); color: var(--dark); }
+[data-theme="dark"] .dropdown-divider            { border-color: var(--border); }
+[data-theme="dark"] .dropdown-item-text          { color: var(--muted); }
+
+/* Bootstrap alerts */
+[data-theme="dark"] .alert-success  { background: rgba(16,185,129,.15); color: #6EE7B7; border-color: rgba(16,185,129,.2); }
+[data-theme="dark"] .alert-danger   { background: rgba(239,68,68,.15);  color: #FCA5A5; border-color: rgba(239,68,68,.2); }
+[data-theme="dark"] .alert-warning  { background: rgba(245,158,11,.15); color: #FCD34D; border-color: rgba(245,158,11,.2); }
+[data-theme="dark"] .alert-info     { background: rgba(37,99,235,.15);  color: #93C5FD; border-color: rgba(37,99,235,.2); }
+[data-theme="dark"] .alert-light    { background: var(--white); color: var(--mid); border-color: var(--border); }
+
+/* Bootstrap badges */
+[data-theme="dark"] .badge.bg-success   { background-color: rgba(16,185,129,.2) !important; color: #6EE7B7 !important; }
+[data-theme="dark"] .badge.bg-warning   { background-color: rgba(245,158,11,.2) !important; color: #FCD34D !important; }
+[data-theme="dark"] .badge.bg-danger    { background-color: rgba(239,68,68,.2)  !important; color: #FCA5A5 !important; }
+[data-theme="dark"] .badge.bg-secondary { background-color: rgba(100,116,139,.3) !important; color: #CBD5E1 !important; }
+[data-theme="dark"] .badge-status-pending  { background: rgba(245,158,11,.2); color: #FCD34D; }
+[data-theme="dark"] .badge-status-approved { background: rgba(16,185,129,.2); color: #6EE7B7; }
+[data-theme="dark"] .badge-status-rejected { background: rgba(239,68,68,.2);  color: #FCA5A5; }
+
+/* Bootstrap table */
+[data-theme="dark"] .table         { --bs-table-bg: transparent; color: var(--mid); border-color: var(--border); }
+[data-theme="dark"] .table th      { background: var(--light); color: var(--muted); border-color: var(--border); }
+[data-theme="dark"] .table td      { border-color: var(--border); }
+[data-theme="dark"] .table tbody tr:hover { background: var(--light) !important; }
+
+/* Bootstrap buttons */
+[data-theme="dark"] .btn-outline-secondary        { color: var(--mid); border-color: var(--border); }
+[data-theme="dark"] .btn-outline-secondary:hover  { background-color: var(--border); color: var(--dark); border-color: var(--border); }
+[data-theme="dark"] .btn-close                    { filter: invert(1) grayscale(100%) brightness(200%); }
+
+/* Stat icon tints */
+[data-theme="dark"] .stat-icon.green { background: rgba(16,185,129,.15); }
+[data-theme="dark"] .stat-icon.red   { background: rgba(239,68,68,.15);  }
+
+/* Lock overlay */
+[data-theme="dark"] .lock-overlay::after { background: rgba(15,23,42,.88); color: var(--mid); }
+
+/* Login tab bar */
+[data-theme="dark"] #tab-bar { background: #0F172A !important; }
+
+/* ── Floating dark-mode toggle button ── */
+.theme-toggle-btn {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  width: 44px;
+  height: 44px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  box-shadow: var(--shadow-lg);
+  z-index: 1060;
+  transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+}
+.theme-toggle-btn:hover {
+  background: var(--primary-dark);
+  transform: scale(1.08) translateY(-2px);
+  box-shadow: 0 8px 20px rgba(37,99,235,.45);
+}
