@@ -285,7 +285,10 @@
         field, institution: inst,
         experience: exp,
         certifications: certs,
-        availability: [days && `Days: ${days}`, times && `Times: ${times}`].filter(Boolean).join(" | ")
+        availability: [days && `Days: ${days}`, times && `Times: ${times}`].filter(Boolean).join(" | "),
+        status: "pending",
+        verified: "false",
+        submittedAt: new Date().toISOString()
       };
 
       // Save to Firestore (shown in admin portal) and Sheets (backup)
