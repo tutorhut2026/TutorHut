@@ -27,7 +27,7 @@
     <!-- Info Banner -->
     <div class="alert alert-info d-flex gap-2 align-items-start mb-4">
       <i class="bi bi-info-circle-fill flex-shrink-0 mt-1"></i>
-      <div>You can browse all tutors freely. To request a tuition session, please <a href="student-login.html">login</a> or <a href="student-register.html">register as a student</a>. Tutor contact details are only shared after admin approval of your request.</div>
+      <div>You can browse all tutors freely. To request a tuition session, please <a href="login.html">sign in</a> or <a href="student-register.html">register as a student</a>. Tutor contact details are only shared after admin approval of your request.</div>
     </div>
 
     <!-- Filter Bar -->
@@ -108,7 +108,7 @@
       <p class="text-muted mb-3">Register as a student to request tuition sessions and access tutor contact details once approved.</p>
       <div class="d-flex justify-content-center gap-2 flex-wrap">
         <a href="student-register.html" class="btn btn-primary">Create Student Account</a>
-        <a href="student-login.html" class="btn btn-outline-primary">Already registered? Login</a>
+        <a href="login.html" class="btn btn-outline-primary">Already registered? Sign In</a>
       </div>
     </div>
   </div>
@@ -140,6 +140,33 @@
     "linear-gradient(135deg,#8B5CF6,#4C1D95)",
     "linear-gradient(135deg,#0EA5E9,#0C4A6E)"
   ];
+
+  function filterTutors() {
+    const subjectVal = document.getElementById('filter-subject').value.toLowerCase();
+    const dayVal     = document.getElementById('filter-day').value.toLowerCase();
+    const timeVal    = document.getElementById('filter-time').value.toLowerCase();
+    const items      = document.querySelectorAll('.tutor-card-item');
+    let visible      = 0;
+
+    items.forEach(item => {
+      const subjects = (item.dataset.subjects || '').toLowerCase();
+      const avail    = (item.dataset.availability || '').toLowerCase();
+      const matchSubject = !subjectVal || subjects.includes(subjectVal);
+      const matchDay     = !dayVal || avail.includes(dayVal);
+      const matchTime    = !timeVal || avail.includes(timeVal);
+      const show = matchSubject && matchDay && matchTime;
+      item.classList.toggle('d-none', !show);
+      if (show) visible++;
+    });
+
+    const total = items.length;
+    const count = document.getElementById('tutor-count');
+    if (!total) return;
+    count.innerHTML = visible === total
+      ? `<strong class="text-dark">${total} tutor${total !== 1 ? 's' : ''}</strong> available`
+      : `<strong class="text-dark">${visible}</strong> of ${total} tutor${total !== 1 ? 's' : ''} match your filters`;
+    document.getElementById('tutor-empty').classList.toggle('d-none', visible > 0);
+  }
 
   async function loadTutors() {
     const grid  = document.getElementById("tutor-grid");
@@ -178,7 +205,7 @@
                     <h5 class="mb-0 fw-700">${tutor.name || "Tutor"}</h5>
                     ${(tutor.verified === "true" || tutor.verified === true) ? '<span class="badge bg-success" style="font-size:.7rem"><i class="bi bi-patch-check-fill me-1"></i>Verified</span>' : ""}
                   </div>
-                  <div class="small text-muted">${tutor.qualification || ""} · ${tutor.experience || ""}</div>
+                  <div class="small text-muted">${tutor.qualification || ""}${tutor.qualification && tutor.experience ? " · " : ""}${tutor.experience || ""}</div>
                 </div>
               </div>
               <p class="small text-muted mb-3">${(tutor.bio || "").slice(0, 120)}${(tutor.bio||"").length > 120 ? "…" : ""}</p>
@@ -191,7 +218,27 @@
           </div>
         </div>`);
     });
+
+    // Pre-fill subject filter from URL param (?subject=maths)
+    const urlSubject = new URLSearchParams(window.location.search).get('subject');
+    if (urlSubject) {
+      const sel = document.getElementById('filter-subject');
+      [...sel.options].forEach(opt => {
+        if (opt.value && opt.value.toLowerCase() === urlSubject.toLowerCase()) sel.value = opt.value;
+      });
+      filterTutors();
+    }
   }
+
+  document.getElementById('tutor-filter-form').addEventListener('submit', e => {
+    e.preventDefault();
+    filterTutors();
+  });
+
+  document.getElementById('filter-reset').addEventListener('click', () => {
+    document.getElementById('tutor-filter-form').reset();
+    filterTutors();
+  });
 
   loadTutors();
 </script>
