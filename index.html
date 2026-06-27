@@ -19,7 +19,7 @@
 <section class="hero">
   <div class="container">
     <div class="row align-items-center g-5">
-      <div class="col-lg-6">
+      <div class="col-12 col-lg-8 mx-auto" id="hero-left">
         <p class="section-label mb-2"><i class="bi bi-stars me-1"></i> Trusted tuition platform</p>
         <h1 class="hero-title">Learn From <span>Expert Tutors</span>, On Your Schedule</h1>
         <p class="hero-subtitle">TutorHut connects students with qualified, admin-verified tutors across a wide range of subjects. Browse, request, and learn — all in one place.</p>
@@ -36,7 +36,7 @@
           <a href="tutor-register.html" class="btn btn-outline-primary btn-lg">Become a Tutor</a>
         </div>
       </div>
-      <div class="col-lg-6 d-none d-lg-block">
+      <div class="col-lg-6 d-none" id="hero-right">
         <div class="hero-img-wrap">
           <div class="row g-3">
             <div class="col-6">
@@ -299,6 +299,14 @@
   ];
   getApprovedTutors().then(tutors => {
     if (!tutors.length) return;
+    // Switch to two-column layout and show tutor cards
+    const left  = document.getElementById('hero-left');
+    const right = document.getElementById('hero-right');
+    left.classList.remove('col-lg-8', 'mx-auto');
+    left.classList.add('col-lg-6');
+    right.classList.remove('d-none');
+    right.classList.add('d-lg-block');
+    // Populate cards with real tutor data
     [1, 2, 3].forEach((n, i) => {
       const t = tutors[i];
       if (!t) return;
