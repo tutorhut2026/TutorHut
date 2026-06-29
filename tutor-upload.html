@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Upload Documents – TutorHut</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script>if(localStorage.theme==='dark')document.documentElement.dataset.theme='dark'</script>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg sticky-top" id="site-navbar"></nav>
+
+<div class="page-header">
+  <div class="container">
+    <nav aria-label="breadcrumb" class="mb-2">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="tutor-dashboard.html">Dashboard</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Upload Documents</li>
+      </ol>
+    </nav>
+    <h1>Upload Documents</h1>
+    <p>Submit your verification documents for review. All files are stored securely and reviewed by our team.</p>
+  </div>
+</div>
+
+<!-- Loading state -->
+<section id="loading-section" class="section">
+  <div class="container text-center py-5">
+    <div class="spinner-border text-primary mb-3" role="status" style="width:3rem;height:3rem">
+      <span class="visually-hidden">Loading…</span>
+    </div>
+    <p class="text-muted mb-0">Loading your document status…</p>
+  </div>
+</section>
+
+<!-- Error state -->
+<section id="error-section" class="section" style="display:none">
+  <div class="container">
+    <div class="alert alert-danger d-flex gap-2 align-items-start">
+      <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
+      <span id="error-msg">An error occurred.</span>
+    </div>
+  </div>
+</section>
+
+<!-- Main content -->
+<section id="upload-section" class="section" style="display:none">
+  <div class="container">
+
+    <!-- Progress summary -->
+    <div class="card p-4 mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="fw-700 mb-0">Verification Progress</h6>
+        <span class="small text-muted" id="progress-count"></span>
+      </div>
+      <div class="progress" style="height:10px">
+        <div class="progress-bar bg-primary" id="progress-bar"
+             role="progressbar" style="width:0%"
+             aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+      </div>
+      <p class="small text-muted mt-2 mb-0">
+        Our team reviews each document after submission. You will be contacted if anything further is needed.
+      </p>
+    </div>
+
+    <!-- Category cards -->
+    <div class="row g-4" id="category-grid"></div>
+
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-bottom text-center">© 2025 TutorHut. All rights reserved.</div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+<script src="js/script.js"></script>
+<script type="module" src="js/navbar.js"></script>
+<script src="js/theme.js"></script>
+
+<script type="module">
+import { auth, onAuthStateChanged, getUploadCategories, uploadDocument, formatDate } from './js/firebase.js';
+
+let currentUser     = null;
+let categoriesCache = [];
+
+// ── Auth guard ────────────────────────────────────────────────────────────────
+onAuthStateChanged(auth, async (user) => {
+  if (!user) { window.location.href = 'login.html'; return; }
+  const dn = user.displayName || '';
+  if (!dn.startsWith('tutor:')) { window.location.href = 'index.html'; return; }
+  currentUser = user;
+  await loadPage();
+});
+
+// ── Data loading ──────────────────────────────────────────────────────────────
+async function loadPage() {
+  try {
+    const cats = await getUploadCategories();
+    if (!Array.isArray(cats) || cats.length === 0) {
+      showError('Could not load document categories. Please refresh the page.');
+      return;
+    }
+    categoriesCache = cats;
+    renderPage();
+  } catch (e) {
+    showError('Failed to load your document status. Please refresh the page.');
+  }
+}
+
+// ── Rendering ─────────────────────────────────────────────────────────────────
+function renderPage() {
+  document.getElementById('loading-section').style.display = 'none';
+  document.getElementById('upload-section').style.display  = '';
+  renderProgressSummary();
+  document.getElementById('category-grid').innerHTML = categoriesCache.map(renderCard).join('');
+}
+
+function renderProgressSummary() {
+  const submitted = categoriesCache.filter(c => c.status && c.status !== 'Not Submitted').length;
+  const total     = categoriesCache.length;
+  const pct       = total > 0 ? Math.round(submitted / total * 100) : 0;
+  const countEl   = document.getElementById('progress-count');
+  const barEl     = document.getElementById('progress-bar');
+  if (countEl) countEl.textContent = submitted + ' of ' + total + ' submitted';
+  if (barEl) {
+    barEl.style.width = pct + '%';
+    barEl.setAttribute('aria-valuenow', String(pct));
+    barEl.textContent = submitted > 0 ? pct + '%' : '';
+  }
+}
+
+function statusBadge(status) {
+  const cfg = {
+    'Not Submitted':      { cls: 'bg-secondary',         icon: 'bi-dash-circle'       },
+    'Uploaded':           { cls: 'bg-info text-dark',    icon: 'bi-cloud-check-fill'  },
+    'Pending Review':     { cls: 'bg-warning text-dark', icon: 'bi-hourglass-split'   },
+    'Approved':           { cls: 'bg-success',           icon: 'bi-check-circle-fill' },
+    'Rejected':           { cls: 'bg-danger',            icon: 'bi-x-circle-fill'     },
+    'Re-upload Required': { cls: 'bg-warning text-dark', icon: 'bi-arrow-repeat'      }
+  };
+  const s = cfg[status] || cfg['Not Submitted'];
+  return `<span class="badge ${s.cls}"><i class="bi ${s.icon} me-1"></i>${escHtml(status || 'Not Submitted')}</span>`;
+}
+
+function btnLabel(cat) {
+  if (cat.multipleFiles) return '<i class="bi bi-plus-circle me-1"></i>Add Document';
+  if (!cat.status || cat.status === 'Not Submitted') return '<i class="bi bi-upload me-1"></i>Upload Document';
+  return '<i class="bi bi-arrow-repeat me-1"></i>Replace Document';
+}
+
+function renderMeta(cat) {
+  if (!cat.activeDocuments || cat.activeDocuments === 0) return '';
+  const dateStr = cat.latestUploadAt ? formatDate(cat.latestUploadAt) : '';
+  if (cat.multipleFiles) {
+    const n = cat.activeDocuments;
+    return `<div class="d-flex align-items-center gap-1 text-muted" style="font-size:.8rem">
+      <i class="bi bi-files me-1"></i>
+      ${n} document${n !== 1 ? 's' : ''} on file${dateStr ? ' &nbsp;·&nbsp; Last: ' + escHtml(dateStr) : ''}
+    </div>`;
+  }
+  const verStr = cat.latestVersion ? ' &nbsp;·&nbsp; v' + cat.latestVersion : '';
+  return `<div class="d-flex align-items-center gap-1 text-muted" style="font-size:.8rem">
+    <i class="bi bi-file-check me-1"></i>
+    On file${verStr}${dateStr ? ' &nbsp;·&nbsp; ' + escHtml(dateStr) : ''}
+  </div>`;
+}
+
+function renderCard(cat) {
+  const accept  = cat.allowedExtensions.map(e => '.' + e).join(',');
+  const extList = cat.allowedExtensions.map(e => e.toUpperCase()).join(', ');
+  const multiNote = cat.multipleFiles
+    ? ' &nbsp;·&nbsp; Multiple files allowed'
+    : ' &nbsp;·&nbsp; Single document only';
+  return `
+    <div class="col-md-6 col-xl-4">
+      <div class="card p-4 h-100 d-flex flex-column" id="card-${cat.key}">
+        <div class="d-flex align-items-start gap-3 mb-3">
+          <div class="stat-icon blue flex-shrink-0">
+            <i class="bi bi-file-earmark-text fs-5"></i>
+          </div>
+          <div class="min-w-0">
+            <h6 class="fw-700 mb-1">${escHtml(cat.label)}</h6>
+            <small class="text-muted">${escHtml(cat.description)}</small>
+          </div>
+        </div>
+
+        <div class="mb-2">
+          <div class="mb-1" style="font-size:.74rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;opacity:.6">Status</div>
+          <div id="status-${cat.key}">${statusBadge(cat.status)}</div>
+        </div>
+
+        <div id="meta-${cat.key}" class="mb-3">${renderMeta(cat)}</div>
+
+        <div class="mb-3 text-muted" style="font-size:.8rem">
+          <i class="bi bi-info-circle me-1"></i>${extList} &nbsp;·&nbsp; Max 10 MB${multiNote}
+        </div>
+
+        <div id="result-${cat.key}" class="mb-2"></div>
+
+        <div class="mt-auto pt-1">
+          <button class="btn btn-primary btn-sm w-100" id="btn-${cat.key}"
+                  onclick="window._up.trigger('${cat.key}')">
+            ${btnLabel(cat)}
+          </button>
+          <input type="file" id="file-${cat.key}" accept="${accept}" style="display:none"
+                 onchange="window._up.select('${cat.key}', this)">
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── Upload flow ───────────────────────────────────────────────────────────────
+function trigger(key) {
+  const input = document.getElementById('file-' + key);
+  if (input) input.click();
+}
+
+async function select(key, input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = ''; // allow re-selection of the same file
+
+  const cat = categoriesCache.find(c => c.key === key);
+  if (!cat) return;
+
+  // Client-side validation — server validates authoritatively; this is UX-only
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!cat.allowedExtensions.includes(ext)) {
+    showResult(key, 'error',
+      'File type ".' + ext + '" is not allowed. Accepted formats: ' +
+      cat.allowedExtensions.map(e => e.toUpperCase()).join(', ') + '.');
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    showResult(key, 'error',
+      'File is too large (' + (file.size / 1024 / 1024).toFixed(1) + ' MB). Maximum size is 10 MB.');
+    return;
+  }
+
+  setUploading(key, true);
+  const result = await uploadDocument(key, file);
+  setUploading(key, false);
+
+  if (result.ok) {
+    // Optimistically update the cached category so meta and button labels stay correct
+    cat.status = 'Uploaded';
+    if (cat.multipleFiles) {
+      cat.activeDocuments = (cat.activeDocuments || 0) + 1;
+    } else {
+      cat.activeDocuments = 1; // always exactly 1 after a successful single-doc upload
+    }
+    cat.latestUploadAt = new Date().toISOString();
+    if (result.version) cat.latestVersion = result.version;
+
+    const statusEl = document.getElementById('status-' + key);
+    const btnEl    = document.getElementById('btn-'    + key);
+    const metaEl   = document.getElementById('meta-'   + key);
+    if (statusEl) statusEl.innerHTML = statusBadge('Uploaded');
+    if (btnEl)    btnEl.innerHTML    = btnLabel(cat);
+    if (metaEl)   metaEl.innerHTML   = renderMeta(cat);
+    showResult(key, 'success', 'Uploaded successfully. Our team will review your document shortly.');
+    renderProgressSummary();
+  } else {
+    showResult(key, 'error', result.error || 'Upload failed. Please try again.');
+  }
+}
+
+// ── UI helpers ────────────────────────────────────────────────────────────────
+function setUploading(key, uploading) {
+  const btn = document.getElementById('btn-' + key);
+  const res = document.getElementById('result-' + key);
+  if (!btn) return;
+  if (uploading) {
+    btn.disabled  = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Uploading…';
+    if (res) res.innerHTML = '';
+  } else {
+    btn.disabled  = false;
+    const cat = categoriesCache.find(c => c.key === key);
+    if (cat) btn.innerHTML = btnLabel(cat);
+  }
+}
+
+function showResult(key, type, msg) {
+  const el = document.getElementById('result-' + key);
+  if (!el) return;
+  const cls = type === 'success' ? 'alert-success' : 'alert-danger';
+  const ico = type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill';
+  el.innerHTML = `
+    <div class="alert ${cls} d-flex align-items-start gap-2 py-2 px-3 mb-0" style="font-size:.85rem">
+      <i class="bi ${ico} flex-shrink-0 mt-1"></i>
+      <span>${escHtml(msg)}</span>
+    </div>`;
+}
+
+function showError(msg) {
+  document.getElementById('loading-section').style.display = 'none';
+  const sec = document.getElementById('error-section');
+  const txt = document.getElementById('error-msg');
+  if (sec) sec.style.display = '';
+  if (txt) txt.textContent = msg;
+}
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// Expose to inline onclick/onchange attributes (module scope is not global)
+window._up = { trigger, select };
+</script>
+
+</body>
+</html>

@@ -119,6 +119,76 @@ export async function updateRequestStatus(id, status) {
   return sheetsGet({ action: "update_status", sheet: "Requests", id, status });
 }
 
+/* ── Document Uploads ── */
+
+/**
+ * Returns the verification schema for every upload category, including the
+ * tutor's current status for each category.
+ *
+ * This is the single source of truth for upload portal rendering — the
+ * frontend maintains no local copy of the schema.
+ *
+ * @param  {string} uid  Firebase UID of the authenticated tutor
+ * @return {Array}  [{ key, label, description, allowedExtensions,
+ *                     multipleFiles, required, status }, ...]
+ */
+export async function getUploadCategories() {
+  const uid = auth.currentUser?.uid;
+  if (!uid) return [];
+  return sheetsGet({ action: "get_upload_categories", uid });
+}
+
+/**
+ * Uploads a verification document for the authenticated tutor.
+ *
+ * The caller passes a File object — Base64 encoding and POST transport are
+ * internal implementation details of this function. The rest of the frontend
+ * is transport-agnostic.
+ *
+ * @param  {string} uid       Firebase UID of the authenticated tutor
+ * @param  {string} category  Verification category key (e.g. "identity")
+ * @param  {File}   file      Browser File object selected by the tutor
+ * @return {Object} { ok, documentId, version, category, tutorId } | { ok: false, error }
+ */
+export async function uploadDocument(category, file) {
+  const uid = auth.currentUser?.uid;
+  if (!uid) return { ok: false, error: "Not authenticated." };
+  try {
+    const base64Content = await _fileToBase64(file);
+    // Content-Type: text/plain avoids CORS pre-flight while still sending JSON.
+    // Apps Script receives the body via e.postData.contents regardless of content type.
+    const res = await fetch(SHEETS_URL, {
+      method:  "POST",
+      headers: { "Content-Type": "text/plain;charset=UTF-8" },
+      body: JSON.stringify({
+        type:             "upload_document",
+        firebaseUid:      uid,
+        category,
+        base64Content,
+        originalFilename: file.name,
+        mimeType:         file.type || "application/octet-stream",
+        fileSize:         file.size
+      })
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return await res.json();
+  } catch (e) {
+    console.warn("uploadDocument failed:", e);
+    return { ok: false, error: "Upload failed — please check your connection and try again." };
+  }
+}
+
+// Private: encodes a File as a base64 string (strips the data URI prefix).
+// This is an implementation detail of uploadDocument() — not part of the public API.
+function _fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = (e) => resolve(e.target.result.split(",")[1]);
+    reader.onerror = () => reject(new Error("FileReader error"));
+    reader.readAsDataURL(file);
+  });
+}
+
 export function authErrorMessage(code) {
   const map = {
     "auth/email-already-in-use": "This email is already registered. Try signing in instead.",

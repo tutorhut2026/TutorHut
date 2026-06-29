@@ -44,6 +44,7 @@ function buildNav(user) {
           <li><span class="dropdown-item-text small text-muted pb-1">${user.email}</span></li>
           <li><hr class="dropdown-divider my-1"></li>
           <li><a class="dropdown-item" href="${dashUrl}"><i class="bi bi-grid me-2"></i>${dashLbl}</a></li>
+          ${isTutor ? `<li><a class="dropdown-item" href="tutor-upload.html"><i class="bi bi-cloud-upload me-2"></i>Upload Documents</a></li>` : ""}
           <li><a class="dropdown-item text-danger" href="#" id="nav-signout-btn">
             <i class="bi bi-box-arrow-right me-2"></i>Sign Out
           </a></li>
