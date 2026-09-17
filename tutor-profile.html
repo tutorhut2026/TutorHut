@@ -67,7 +67,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
 <script src="js/script.js"></script>
 <script type="module">
-  import { getTutorById } from "./js/firebase.js";
+  import { getTutorById, getReviews } from "./js/firebase.js";
 
   const RATE_LEVELS = [
     { key: "rateKS3",        label: "KS3",        desc: "Year 7–9"   },
@@ -94,8 +94,9 @@
   }
 
   if (!tutorId) { notFound(); } else {
-    getTutorById(tutorId).then(t => {
+    Promise.all([getTutorById(tutorId), getReviews(tutorId)]).then(([t, reviews]) => {
       if (!t) { notFound(); return; }
+      const revList = Array.isArray(reviews) ? reviews : [];
 
       document.getElementById("header-name").textContent  = t.name || "Tutor Profile";
       document.getElementById("breadcrumb-name").textContent = t.name || "Tutor Profile";
@@ -178,13 +179,38 @@
               ${times ? `<div><div class="small fw-600 text-muted mb-1">Time Slots</div>${times}</div>` : ""}
             </div>` : ""}
 
-            <!-- Reviews placeholder -->
+            <!-- Reviews -->
             <div class="card p-4 mb-4">
-              <h5 class="fw-700 mb-3"><i class="bi bi-star me-2 text-primary"></i>Reviews</h5>
-              <div class="review-placeholder">
-                <i class="bi bi-chat-square-text fs-2 d-block mb-2 opacity-50"></i>
-                <p class="small mb-0">No reviews yet. Reviews are left by students after sessions are completed.</p>
-              </div>
+              ${(function() {
+                if (!revList.length) {
+                  return `<h5 class="fw-700 mb-3"><i class="bi bi-star me-2 text-primary"></i>Reviews</h5>
+                    <div class="review-placeholder">
+                      <i class="bi bi-chat-square-text fs-2 d-block mb-2 opacity-50"></i>
+                      <p class="small mb-0">No reviews yet.</p>
+                    </div>`;
+                }
+                const avg  = (revList.reduce((s, r) => s + parseInt(r.rating || 0), 0) / revList.length).toFixed(1);
+                const stars = n => "★".repeat(Math.round(n)) + "☆".repeat(5 - Math.round(n));
+                const cards = revList.map(r => {
+                  const d = r.createdAt ? new Date(r.createdAt).toLocaleDateString("en-GB", {day:"numeric",month:"short",year:"numeric"}) : "";
+                  return `<div class="border rounded p-3 mb-2">
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                      <div>
+                        <span style="color:#F59E0B;letter-spacing:1px">${stars(parseInt(r.rating||0))}</span>
+                        <strong class="ms-2 small">${r.studentName || "Student"}</strong>
+                      </div>
+                      <small class="text-muted">${d}</small>
+                    </div>
+                    ${r.reviewText ? `<p class="small mb-0 text-muted">${r.reviewText.replace(/</g,"&lt;")}</p>` : ""}
+                  </div>`;
+                }).join("");
+                return `<div class="d-flex align-items-center gap-3 mb-3">
+                    <h5 class="fw-700 mb-0"><i class="bi bi-star-fill text-warning me-2"></i>Reviews</h5>
+                    <span class="badge bg-warning text-dark px-3 py-2" style="font-size:.95rem">★ ${avg}</span>
+                    <span class="text-muted small">${revList.length} review${revList.length !== 1 ? "s" : ""}</span>
+                  </div>
+                  ${cards}`;
+              })()}
             </div>
 
             <!-- CTA -->
@@ -202,7 +228,7 @@
 
           </div>
         </div>`;
-    }).catch(() => notFound());
+    }).catch(err => { console.error(err); notFound(); });
   }
 </script>
 <script type="module" src="js/navbar.js"></script>

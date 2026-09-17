@@ -276,6 +276,16 @@
                 : tutor.dbsVerificationStatus === "Unverified" ? `<span class="badge bg-warning text-dark"><i class="bi bi-shield-exclamation me-1"></i>DBS Pending Check</span>`
                 : tutor.dbsVerificationStatus === "Failed"     ? `<span class="badge bg-danger"><i class="bi bi-shield-fill-x me-1"></i>DBS Failed</span>`
                 : `<span class="text-muted small">Not provided — <a href="tutor-upload.html">add DBS details</a></span>`}
+                ${(function() {
+                  if (!tutor.dbsIssuedDate) return "";
+                  const issued  = new Date(tutor.dbsIssuedDate);
+                  const expiry  = new Date(issued.setFullYear(issued.getFullYear() + 1));
+                  const days    = Math.round((expiry - new Date()) / (1000*60*60*24));
+                  const expStr  = expiry.toLocaleDateString("en-GB", {day:"numeric",month:"short",year:"numeric"});
+                  if (days <= 0)  return `<div class="mt-1"><span class="badge bg-danger"><i class="bi bi-exclamation-circle me-1"></i>Update Service expired</span><div class="small text-muted mt-1">Renewal was due ${expStr}</div></div>`;
+                  if (days <= 60) return `<div class="mt-1"><span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>Renewal due soon</span><div class="small text-muted mt-1">Update Service expires ${expStr} (in ${days} days)</div></div>`;
+                  return `<div class="small text-muted mt-1"><i class="bi bi-calendar-check me-1"></i>Update Service renews ${expStr}</div>`;
+                })()}
               </div>
             </div>
 

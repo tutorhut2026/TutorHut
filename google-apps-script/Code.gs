@@ -1546,6 +1546,109 @@ function migrateVerificationStatuses() {
 }
 
 
+// ── Reviews ──────────────────────────────────────────────────────
+
+function isValidReviewId(reviewId) {
+  return /^REV\d{9}$/.test(String(reviewId || ''));
+}
+
+function _nextReviewId(rows) {
+  var year   = new Date().getFullYear();
+  var prefix = 'REV' + year;
+  var maxSeq = 0;
+  rows.forEach(function(row) {
+    var rid = String(row.reviewId || '').trim();
+    if (isValidReviewId(rid) && rid.substring(0, 7) === prefix) {
+      var seq = parseInt(rid.substring(7), 10);
+      if (!isNaN(seq) && seq > maxSeq) maxSeq = seq;
+    }
+  });
+  var seqStr = String(maxSeq + 1);
+  while (seqStr.length < 5) seqStr = '0' + seqStr;
+  return prefix + seqStr;
+}
+
+// Run ONCE from Apps Script editor to create the Reviews sheet.
+function setupReviewsSheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (ss.getSheetByName('Reviews')) {
+    Logger.log('[Reviews] setupReviewsSheet: sheet already exists.');
+    return { done: false, reason: 'already exists' };
+  }
+  var sh = ss.insertSheet('Reviews');
+  sh.appendRow(['reviewId','requestId','tutorId','studentUid','studentName',
+                'rating','reviewText','createdAt',
+                'moderationStatus','moderatedBy','moderatedAt']);
+  SpreadsheetApp.flush();
+  Logger.log('[Reviews] setupReviewsSheet: created.');
+  return { done: true };
+}
+
+function _submitReview(data) {
+  var ts          = new Date().toISOString();
+  var requestId   = String(data.requestId   || '').trim();
+  var tutorId     = String(data.tutorId     || '').trim();
+  var studentUid  = String(data.studentUid  || '').trim();
+  var studentName = String(data.studentName || '').trim();
+  var rating      = parseInt(String(data.rating || '0'), 10);
+  var reviewText  = String(data.reviewText  || '').trim().substring(0, 500);
+
+  if (!requestId || !tutorId || !studentUid)
+    return { ok: false, error: 'requestId, tutorId and studentUid are required' };
+  if (rating < 1 || rating > 5)
+    return { ok: false, error: 'rating must be between 1 and 5' };
+
+  // Verify request belongs to this student and is paid/released
+  var reqRows = sheetToObjects(getSheet('Requests'));
+  var reqRow  = null;
+  for (var ri = 0; ri < reqRows.length; ri++) {
+    if (String(reqRows[ri].id || '').trim() === requestId &&
+        String(reqRows[ri].studentUid || '').trim() === studentUid) {
+      reqRow = reqRows[ri]; break;
+    }
+  }
+  if (!reqRow) return { ok: false, error: 'Request not found' };
+  var ps = String(reqRow.paymentStatus || '').toLowerCase();
+  if (ps !== 'released' && ps !== 'paid')
+    return { ok: false, error: 'Reviews can only be submitted after the introduction fee is paid' };
+
+  // One review per request
+  var revSh   = getSheet('Reviews');
+  var revRows = sheetToObjects(revSh);
+  for (var revi = 0; revi < revRows.length; revi++) {
+    if (String(revRows[revi].requestId || '').trim() === requestId)
+      return { ok: false, error: 'A review already exists for this request', alreadyReviewed: true };
+  }
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  var reviewId;
+  try {
+    revRows  = sheetToObjects(revSh);
+    reviewId = _nextReviewId(revRows);
+    _appendToSheet(revSh, {
+      reviewId:         reviewId,
+      requestId:        requestId,
+      tutorId:          tutorId,
+      studentUid:       studentUid,
+      studentName:      studentName,
+      rating:           String(rating),
+      reviewText:       reviewText,
+      createdAt:        ts,
+      moderationStatus: 'Pending',
+      moderatedBy:      '',
+      moderatedAt:      ''
+    });
+  } finally {
+    lock.releaseLock();
+  }
+
+  Logger.log('[Reviews][' + ts + '] SUBMITTED reviewId=' + reviewId +
+             ' tutorId=' + tutorId + ' rating=' + rating);
+  return { ok: true, reviewId: reviewId };
+}
+
+
 // ── GET Handler ──────────────────────────────────────────────────
 
 function doGet(e) {
@@ -1765,6 +1868,45 @@ function doGet(e) {
             latestVersion:     meta.latestVersion
           };
         }));
+      }
+
+      case 'get_reviews': {
+        var grevTid = String(p.tutorId || '').trim();
+        if (!grevTid) return jsonOut([]);
+        return jsonOut(
+          sheetToObjects(getSheet('Reviews')).filter(function(r) {
+            return String(r.tutorId || '').trim() === grevTid &&
+                   String(r.moderationStatus || '').trim() === 'Approved';
+          })
+        );
+      }
+
+      case 'get_all_reviews':
+        return jsonOut(sheetToObjects(getSheet('Reviews')));
+
+      case 'get_student_reviews': {
+        var gsrUid = String(p.uid || '').trim();
+        if (!gsrUid) return jsonOut([]);
+        return jsonOut(
+          sheetToObjects(getSheet('Reviews')).filter(function(r) {
+            return String(r.studentUid || '').trim() === gsrUid;
+          })
+        );
+      }
+
+      case 'moderate_review': {
+        var mrid    = String(p.id || '').trim();
+        var mStatus = String(p.moderationStatus || '').trim();
+        var mBy     = String(p.moderatedBy || 'admin').trim();
+        if (!mrid || ['Approved','Hidden','Pending'].indexOf(mStatus) === -1)
+          return jsonOut({ ok: false, error: 'id and valid moderationStatus required' });
+        var mOk = updateSheetRowByKey(getSheet('Reviews'), 'reviewId', mrid, {
+          moderationStatus: mStatus,
+          moderatedBy:      mBy,
+          moderatedAt:      new Date().toISOString()
+        });
+        Logger.log('[Reviews] moderate_review id=' + mrid + ' status=' + mStatus + ' ok=' + mOk);
+        return jsonOut({ ok: mOk });
       }
 
       default:
@@ -2181,6 +2323,10 @@ function doPost(e) {
 
     if (type === 'upload_document') {
       return jsonOut(_handleDocumentUpload(data));
+    }
+
+    if (type === 'submit_review') {
+      return jsonOut(_submitReview(data));
     }
 
     var sheetName = type === 'student_request' ? 'Requests' : null;

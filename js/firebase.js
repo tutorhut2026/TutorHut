@@ -260,6 +260,59 @@ function _fileToBase64(file) {
   });
 }
 
+/* ── Reviews ── */
+
+export async function submitReview(requestId, tutorId, rating, reviewText) {
+  const user = auth.currentUser;
+  if (!user) return { ok: false, error: "Not authenticated." };
+  try {
+    const res = await fetch(SHEETS_URL, {
+      method:  "POST",
+      headers: { "Content-Type": "text/plain;charset=UTF-8" },
+      body: JSON.stringify({
+        type:        "submit_review",
+        requestId,
+        tutorId,
+        studentUid:  user.uid,
+        studentName: (user.displayName || "").replace("student:", "") || "Student",
+        rating,
+        reviewText
+      })
+    });
+    return await res.json();
+  } catch (e) {
+    console.warn("submitReview failed:", e);
+    return { ok: false, error: "Network error" };
+  }
+}
+
+export async function getReviews(tutorId) {
+  return sheetsGet({ action: "get_reviews", tutorId });
+}
+
+export async function getStudentReviews() {
+  const uid = auth.currentUser?.uid;
+  if (!uid) return [];
+  return sheetsGet({ action: "get_student_reviews", uid });
+}
+
+export async function getAllReviews() {
+  return sheetsGet({ action: "get_all_reviews" });
+}
+
+export async function moderateReview(id, moderationStatus) {
+  try {
+    const url = SHEETS_URL + "?" + new URLSearchParams({
+      action: "moderate_review", id, moderationStatus, moderatedBy: "admin"
+    }).toString();
+    const res = await fetch(url);
+    return await res.json();
+  } catch (e) {
+    console.warn("moderateReview failed:", e);
+    return { ok: false, error: "Network error" };
+  }
+}
+
 export function authErrorMessage(code) {
   const map = {
     "auth/email-already-in-use": "This email is already registered. Try signing in instead.",

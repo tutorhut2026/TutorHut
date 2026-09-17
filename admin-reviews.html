@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Review Moderation – TutorHut Admin</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script>if(localStorage.theme==='dark')document.documentElement.dataset.theme='dark'</script>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg sticky-top" id="site-navbar"></nav>
+
+<div class="page-header">
+  <div class="container">
+    <nav aria-label="breadcrumb"><ol class="breadcrumb mb-2">
+      <li class="breadcrumb-item"><a href="index.html">Home</a></li>
+      <li class="breadcrumb-item"><a href="admin-dashboard.html">Admin</a></li>
+      <li class="breadcrumb-item active">Review Moderation</li>
+    </ol></nav>
+    <h1>Review Moderation</h1>
+    <p>Approve reviews to make them public on tutor profiles, or hide ones that breach guidelines.</p>
+  </div>
+</div>
+
+<section class="section">
+  <div class="container" id="reviews-root">
+    <div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-bottom text-center">© 2025 TutorHut. All rights reserved.</div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+<script src="js/script.js"></script>
+<script type="module">
+  import { auth, onAuthStateChanged, ADMIN_EMAIL, getAllReviews, moderateReview } from "./js/firebase.js";
+
+  const root = document.getElementById("reviews-root");
+
+  const STARS = n => "★".repeat(Math.round(n)) + "☆".repeat(5 - Math.round(n));
+  const fmtDate = v => v ? new Date(v).toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" }) : "—";
+
+  const STATUS_BADGE = {
+    Pending:  `<span class="badge bg-warning text-dark">Pending</span>`,
+    Approved: `<span class="badge bg-success">Approved</span>`,
+    Hidden:   `<span class="badge bg-secondary">Hidden</span>`
+  };
+
+  let _filter    = "Pending";
+  let _allReviews = [];
+
+  function renderTable() {
+    const filtered = _filter === "All" ? _allReviews : _allReviews.filter(r => r.moderationStatus === _filter);
+
+    if (!filtered.length) {
+      document.getElementById("table-body").innerHTML = `
+        <tr><td colspan="7" class="text-center text-muted py-4">
+          No ${_filter === "All" ? "" : _filter.toLowerCase() + " "}reviews found.
+        </td></tr>`;
+      return;
+    }
+
+    document.getElementById("table-body").innerHTML = filtered.map(r => {
+      const canApprove = r.moderationStatus !== "Approved";
+      const canHide    = r.moderationStatus !== "Hidden";
+      return `
+        <tr id="row-${r.reviewId}">
+          <td class="small">${r.studentName || "—"}</td>
+          <td class="small">${r.tutorId || "—"}</td>
+          <td style="color:#F59E0B;letter-spacing:1px">${STARS(parseInt(r.rating||0))}</td>
+          <td class="small" style="max-width:260px">${r.reviewText ? r.reviewText.replace(/</g,"&lt;") : "<em class='text-muted'>No text</em>"}</td>
+          <td class="small">${fmtDate(r.createdAt)}</td>
+          <td>${STATUS_BADGE[r.moderationStatus] || ""}</td>
+          <td>
+            <div class="d-flex gap-1">
+              ${canApprove ? `<button class="btn btn-success btn-sm" onclick="moderate('${r.reviewId}','Approved')"><i class="bi bi-check-lg"></i> Approve</button>` : ""}
+              ${canHide    ? `<button class="btn btn-secondary btn-sm" onclick="moderate('${r.reviewId}','Hidden')"><i class="bi bi-eye-slash"></i> Hide</button>` : ""}
+              ${!canApprove && !canHide ? `<span class="text-muted small">—</span>` : ""}
+            </div>
+          </td>
+        </tr>`;
+    }).join("");
+  }
+
+  async function load() {
+    _allReviews = await getAllReviews();
+    _allReviews.sort((a, b) => {
+      const order = { Pending: 0, Approved: 1, Hidden: 2 };
+      return (order[a.moderationStatus] ?? 3) - (order[b.moderationStatus] ?? 3);
+    });
+
+    const pending  = _allReviews.filter(r => r.moderationStatus === "Pending").length;
+    const approved = _allReviews.filter(r => r.moderationStatus === "Approved").length;
+    const hidden   = _allReviews.filter(r => r.moderationStatus === "Hidden").length;
+
+    root.innerHTML = `
+      <!-- Stats -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="dash-stat-card">
+            <div class="stat-icon amber"><i class="bi bi-hourglass-split" style="color:var(--accent)"></i></div>
+            <div><div class="stat-value">${pending}</div><div class="stat-label">Pending</div></div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="dash-stat-card">
+            <div class="stat-icon green"><i class="bi bi-check2-circle" style="color:var(--success)"></i></div>
+            <div><div class="stat-value">${approved}</div><div class="stat-label">Approved</div></div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="dash-stat-card">
+            <div class="stat-icon"><i class="bi bi-eye-slash text-muted"></i></div>
+            <div><div class="stat-value">${hidden}</div><div class="stat-label">Hidden</div></div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="dash-stat-card">
+            <div class="stat-icon blue"><i class="bi bi-star" style="color:var(--primary)"></i></div>
+            <div><div class="stat-value">${_allReviews.length}</div><div class="stat-label">Total</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter + Table -->
+      <div class="card">
+        <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <span><i class="bi bi-star me-2"></i>Reviews</span>
+          <div class="btn-group btn-group-sm" id="filter-btns">
+            <button class="btn btn-primary" onclick="setFilter('Pending')">Pending</button>
+            <button class="btn btn-outline-secondary" onclick="setFilter('Approved')">Approved</button>
+            <button class="btn btn-outline-secondary" onclick="setFilter('Hidden')">Hidden</button>
+            <button class="btn btn-outline-secondary" onclick="setFilter('All')">All</button>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table mb-0">
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Tutor ID</th>
+                <th>Rating</th>
+                <th>Review</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+          </table>
+        </div>
+      </div>`;
+
+    renderTable();
+  }
+
+  window.setFilter = function(f) {
+    _filter = f;
+    document.querySelectorAll("#filter-btns button").forEach(b => {
+      b.className = b.textContent.trim() === f ? "btn btn-primary" : "btn btn-outline-secondary";
+    });
+    renderTable();
+  };
+
+  window.moderate = async function(reviewId, status) {
+    const row = document.getElementById("row-" + reviewId);
+    if (row) row.style.opacity = "0.4";
+    const result = await moderateReview(reviewId, status);
+    if (result.ok) {
+      const rev = _allReviews.find(r => r.reviewId === reviewId);
+      if (rev) { rev.moderationStatus = status; rev.moderatedAt = new Date().toISOString(); }
+      renderTable();
+    } else {
+      if (row) row.style.opacity = "1";
+      alert("Failed to update: " + (result.error || "Unknown error"));
+    }
+  };
+
+  onAuthStateChanged(auth, async user => {
+    if (!user || user.email !== ADMIN_EMAIL) {
+      root.innerHTML = `
+        <div class="text-center py-5">
+          <i class="bi bi-lock fs-1 d-block mb-3 text-muted opacity-25"></i>
+          <h5 class="fw-700">Admin access required</h5>
+          <a href="login.html" class="btn btn-primary mt-3">Sign In</a>
+        </div>`;
+      return;
+    }
+    await load();
+  });
+</script>
+<script type="module" src="js/navbar.js"></script>
+<script src="js/theme.js"></script>
+</body>
+</html>
