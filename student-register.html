@@ -28,6 +28,56 @@
     </div>
 
     <div class="auth-card" style="max-width:100%">
+
+      <!-- Profile completion step shown after Google sign-up -->
+      <div id="google-profile-step" class="d-none">
+        <div class="text-center mb-4">
+          <div style="width:56px;height:56px;background:#e8f0fe;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
+            <i class="bi bi-person-check" style="font-size:1.5rem;color:#4070f4"></i>
+          </div>
+          <h5 class="fw-700 mb-1">Almost there!</h5>
+          <p class="text-muted small mb-0">Tell us a bit more so we can match you with the right tutors.</p>
+        </div>
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">Phone Number</label>
+            <input id="gp-phone" type="tel" class="form-control" placeholder="07700 900000" />
+          </div>
+          <div class="col-12">
+            <label class="form-label">Year Group / Level</label>
+            <select id="gp-year" class="form-select">
+              <option value="">Select level</option>
+              <option>Year 7</option><option>Year 8</option><option>Year 9</option>
+              <option>Year 10 (GCSE)</option><option>Year 11 (GCSE)</option>
+              <option>Year 12 (A-Level)</option><option>Year 13 (A-Level)</option>
+              <option>University</option><option>Adult Learner</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Subjects Interested In</label>
+            <div class="subject-checkbox-group">
+              <label class="subject-check-label"><input type="checkbox" value="maths" />Maths</label>
+              <label class="subject-check-label"><input type="checkbox" value="physics" />Physics</label>
+              <label class="subject-check-label"><input type="checkbox" value="chemistry" />Chemistry</label>
+              <label class="subject-check-label"><input type="checkbox" value="biology" />Biology</label>
+              <label class="subject-check-label"><input type="checkbox" value="english" />English</label>
+              <label class="subject-check-label"><input type="checkbox" value="computing" />Computing</label>
+              <label class="subject-check-label"><input type="checkbox" value="history" />History</label>
+              <label class="subject-check-label"><input type="checkbox" value="languages" />Languages</label>
+            </div>
+          </div>
+        </div>
+        <div class="alert alert-danger d-none mt-3 mb-0" id="gp-error"></div>
+        <button id="gp-submit" type="button" class="btn btn-primary btn-lg w-100 mt-4">
+          <i class="bi bi-arrow-right me-2"></i>Save &amp; Continue
+        </button>
+        <p class="text-center small text-muted mt-3 mb-0">
+          <a href="browse-tutors.html" class="text-muted">Skip for now →</a>
+        </p>
+      </div>
+
+      <!-- Main registration form -->
+      <div id="reg-main">
       <h4 class="fw-700 mb-1">Student Registration</h4>
       <p class="text-muted small mb-3">Join TutorHut to browse tutors and connect with verified experts.</p>
 
@@ -124,6 +174,7 @@
       </form>
 
       <p class="text-center small text-muted mt-3 mb-0">Already have an account? <a href="student-login.html">Login here</a></p>
+      </div><!-- /#reg-main -->
     </div>
 
     <p class="text-center small text-muted mt-3">Are you a tutor? <a href="tutor-register.html">Apply to join TutorHut</a></p>
@@ -135,8 +186,18 @@
 <script type="module">
   import {
     auth, createUserWithEmailAndPassword, updateProfile, saveToSheets,
-    authErrorMessage, GoogleAuthProvider, signInWithPopup
+    authErrorMessage, GoogleAuthProvider, signInWithPopup, saveStudentProfile
   } from "./js/firebase.js";
+
+  const GOOGLE_SVG = '<svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg> Sign up with Google';
+
+  let _googleUser = null;
+
+  function showProfileStep(user) {
+    _googleUser = user;
+    document.getElementById("reg-main").classList.add("d-none");
+    document.getElementById("google-profile-step").classList.remove("d-none");
+  }
 
   window.googleSignUp = async function() {
     const btn    = document.getElementById("google-signup-btn");
@@ -149,16 +210,18 @@
       const { user }  = await signInWithPopup(auth, provider);
       const dn = user.displayName || "";
       if (dn.startsWith("student:")) {
+        // Existing student account — go straight to dashboard
         window.location.href = "browse-tutors.html";
       } else if (dn.startsWith("tutor:")) {
         errDiv.textContent = "This Google account is already linked to a tutor profile.";
         errDiv.classList.remove("d-none");
         btn.disabled = false;
-        btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg> Sign up with Google';
+        btn.innerHTML = GOOGLE_SVG;
       } else {
+        // New account — set displayName then show profile completion step
         const firstName = (user.displayName || "Student").split(" ")[0];
         await updateProfile(user, { displayName: `student:${firstName}` });
-        window.location.href = "browse-tutors.html";
+        showProfileStep(user);
       }
     } catch (ex) {
       if (ex.code !== "auth/popup-closed-by-user") {
@@ -166,9 +229,39 @@
         errDiv.classList.remove("d-none");
       }
       btn.disabled = false;
-      btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg> Sign up with Google';
+      btn.innerHTML = GOOGLE_SVG;
     }
   };
+
+  document.getElementById("gp-submit").addEventListener("click", async function() {
+    const btn     = document.getElementById("gp-submit");
+    const errDiv  = document.getElementById("gp-error");
+    const phone   = document.getElementById("gp-phone").value.trim();
+    const year    = document.getElementById("gp-year").value;
+    const subjects = [...document.querySelectorAll("#google-profile-step .subject-check-label input:checked")]
+      .map(cb => cb.value).join(", ");
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving…';
+    errDiv.classList.add("d-none");
+
+    try {
+      if (_googleUser) {
+        await saveStudentProfile({
+          uid:       _googleUser.uid,
+          name:      _googleUser.displayName.replace("student:", ""),
+          email:     _googleUser.email || "",
+          phone, yearGroup: year, subjects
+        });
+      }
+      window.location.href = "browse-tutors.html";
+    } catch (e) {
+      errDiv.textContent = "Could not save profile. You can update it later in Settings.";
+      errDiv.classList.remove("d-none");
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-arrow-right me-2"></i>Save & Continue';
+    }
+  });
 
   const form    = document.getElementById("student-reg-form");
   const btn     = document.getElementById("s-submit");
