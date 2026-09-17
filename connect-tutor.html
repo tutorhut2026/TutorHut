@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Connect with Tutor – TutorHut</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script>if(localStorage.theme==='dark')document.documentElement.dataset.theme='dark'</script>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg sticky-top" id="site-navbar"></nav>
+
+<div class="page-header">
+  <div class="container">
+    <nav aria-label="breadcrumb"><ol class="breadcrumb mb-2">
+      <li class="breadcrumb-item"><a href="index.html">Home</a></li>
+      <li class="breadcrumb-item"><a href="browse-tutors.html">Browse Tutors</a></li>
+      <li class="breadcrumb-item active">Connect</li>
+    </ol></nav>
+    <h1>Connect with a Tutor</h1>
+    <p>Pay the one-time introduction fee to unlock the tutor's contact details.</p>
+  </div>
+</div>
+
+<section class="section">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-6" id="page-content">
+        <div class="text-center py-5">
+          <div class="spinner-border text-primary" role="status"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-bottom text-center">© 2025 TutorHut. All rights reserved.</div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+<script src="js/script.js"></script>
+<script type="module" src="js/navbar.js"></script>
+<script type="module">
+  import {
+    auth, onAuthStateChanged,
+    getTutorById, getStudentConnections, initiatePayment
+  } from "./js/firebase.js";
+
+  const params  = new URLSearchParams(window.location.search);
+  const tutorId = params.get("tutorid");
+  const cont    = document.getElementById("page-content");
+
+  const INTRO_FEE_DISPLAY = "£15";
+
+  function showError(msg) {
+    cont.innerHTML = `
+      <div class="text-center py-5">
+        <i class="bi bi-exclamation-triangle fs-1 d-block mb-3 text-warning opacity-50"></i>
+        <h5 class="fw-700 mb-2">Something went wrong</h5>
+        <p class="text-muted mb-4">${msg}</p>
+        <a href="browse-tutors.html" class="btn btn-primary">Browse Tutors</a>
+      </div>`;
+  }
+
+  if (!tutorId) {
+    showError("No tutor specified.");
+  } else {
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        cont.innerHTML = `
+          <div class="text-center py-5">
+            <i class="bi bi-lock fs-1 d-block mb-3 text-muted opacity-25"></i>
+            <h5 class="fw-700 mb-2">Sign in to connect</h5>
+            <p class="text-muted mb-4">You need a student account to connect with tutors.</p>
+            <div class="d-flex justify-content-center gap-2 flex-wrap">
+              <a href="login.html?redirect=connect-tutor.html%3Ftutorid%3D${encodeURIComponent(tutorId)}" class="btn btn-primary">Sign In</a>
+              <a href="student-register.html" class="btn btn-outline-primary">Register</a>
+            </div>
+          </div>`;
+        return;
+      }
+
+      const dn = user.displayName || "";
+      if (!dn.startsWith("student:")) {
+        cont.innerHTML = `
+          <div class="text-center py-5">
+            <i class="bi bi-exclamation-triangle fs-1 d-block mb-3 text-warning opacity-50"></i>
+            <h5 class="fw-700 mb-2">Student accounts only</h5>
+            <p class="text-muted mb-4">Only students can connect with tutors.</p>
+            <a href="browse-tutors.html" class="btn btn-primary">Browse Tutors</a>
+          </div>`;
+        return;
+      }
+
+      const studentName = dn.replace("student:", "");
+
+      const [tutor, myConnections] = await Promise.all([
+        getTutorById(tutorId),
+        getStudentConnections(user.uid)
+      ]);
+
+      if (!tutor) { showError("Tutor not found."); return; }
+
+      const alreadyConnected = myConnections.some(c => c.tutorId === tutorId);
+
+      if (alreadyConnected) {
+        const conn = myConnections.find(c => c.tutorId === tutorId);
+        const ps   = String(conn?.paymentStatus || "").toLowerCase();
+        cont.innerHTML = `
+          <div class="card p-4 text-center">
+            <div class="mb-3">
+              <div class="display-6 fw-700 text-success"><i class="bi bi-check-circle-fill"></i></div>
+            </div>
+            <h4 class="fw-700 mb-2">Already connected!</h4>
+            <p class="text-muted mb-4">You've already connected with <strong>${tutor.name || "this tutor"}</strong>.</p>
+            <a href="student-dashboard.html" class="btn btn-primary">
+              <i class="bi bi-person-lines-fill me-2"></i>${ps === "paid" || ps === "released" ? "View Contact Details" : "Go to Dashboard"}
+            </a>
+          </div>`;
+        return;
+      }
+
+      const initial  = (tutor.name || "T").charAt(0).toUpperCase();
+      const subjects = (tutor.subjects || "").split(",").slice(0, 4).map(s =>
+        `<span class="badge-subject">${s.trim()}</span>`).join(" ");
+
+      cont.innerHTML = `
+        <!-- Tutor Card -->
+        <div class="card p-4 mb-4" style="border-color:var(--primary-light);background:var(--primary-light)">
+          <div class="d-flex align-items-center gap-3">
+            <div class="avatar-placeholder" style="width:56px;height:56px;font-size:1.4rem">${initial}</div>
+            <div>
+              <h5 class="fw-700 mb-1">${tutor.name || "Tutor"}</h5>
+              ${tutor.qualification ? `<div class="small text-muted"><i class="bi bi-mortarboard me-1"></i>${tutor.qualification}</div>` : ""}
+              <div class="mt-1">${subjects}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- What you get -->
+        <div class="card p-4 mb-4">
+          <h6 class="fw-700 mb-3"><i class="bi bi-gift me-2 text-primary"></i>What you get</h6>
+          <ul class="list-unstyled mb-0">
+            <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>${tutor.name ? tutor.name.split(" ")[0] : "The tutor"}'s direct email address</li>
+            <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Phone number for arranging sessions</li>
+            <li class="mb-0"><i class="bi bi-check2-circle text-success me-2"></i>Ability to leave a review after sessions</li>
+          </ul>
+        </div>
+
+        <!-- Pricing & CTA -->
+        <div class="card p-4 text-center">
+          <div class="fw-700 mb-1" style="font-size:2.5rem">${INTRO_FEE_DISPLAY}</div>
+          <div class="text-muted small mb-4">One-time introduction fee · No subscription</div>
+          <button id="pay-btn" class="btn btn-primary btn-lg w-100 mb-3" onclick="pay()">
+            <i class="bi bi-credit-card me-2"></i>Pay ${INTRO_FEE_DISPLAY} &amp; Get Contact Details
+          </button>
+          <p class="small text-muted mb-0">
+            <i class="bi bi-shield-check me-1 text-success"></i>Secure payment via Stripe · Contact details unlocked instantly
+          </p>
+          <div class="alert alert-danger d-none mt-3 py-2 small" id="pay-error"></div>
+        </div>`;
+
+      window.pay = async function() {
+        const btn = document.getElementById("pay-btn");
+        const err = document.getElementById("pay-error");
+        err.classList.add("d-none");
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Redirecting to payment…';
+        try {
+          const result = await initiatePayment(tutorId, tutor.name || "", studentName);
+          if (result.url) {
+            window.location.href = result.url;
+          } else {
+            err.textContent = result.error || "Payment could not be started. Please try again.";
+            err.classList.remove("d-none");
+            btn.disabled = false;
+            btn.innerHTML = `<i class="bi bi-credit-card me-2"></i>Pay ${INTRO_FEE_DISPLAY} &amp; Get Contact Details`;
+          }
+        } catch (e) {
+          err.textContent = "Failed to start payment. Please try again.";
+          err.classList.remove("d-none");
+          btn.disabled = false;
+          btn.innerHTML = `<i class="bi bi-credit-card me-2"></i>Pay ${INTRO_FEE_DISPLAY} &amp; Get Contact Details`;
+        }
+      };
+    });
+  }
+</script>
+<script src="js/theme.js"></script>
+</body>
+</html>

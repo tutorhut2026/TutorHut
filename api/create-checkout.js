@@ -11,8 +11,9 @@ module.exports = async (req, res) => {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST")   return res.status(405).json({ error: "Method not allowed" });
 
-  const { requestId } = req.body || {};
-  if (!requestId) return res.status(400).json({ error: "requestId is required" });
+  const { tutorId, tutorName, studentUid, studentName } = req.body || {};
+  if (!tutorId)     return res.status(400).json({ error: "tutorId is required" });
+  if (!studentUid)  return res.status(400).json({ error: "studentUid is required" });
 
   const feePence   = parseInt(process.env.INTRO_FEE_PENCE || "1500", 10);
   const siteUrl    = (process.env.SITE_URL || "").replace(/\/$/, "");
@@ -23,13 +24,13 @@ module.exports = async (req, res) => {
       line_items: [{
         price_data: {
           currency:     "gbp",
-          product_data: { name: "TutorHut Introduction Fee" },
+          product_data: { name: `TutorHut – Connect with ${tutorName || "Tutor"}` },
           unit_amount:  feePence
         },
         quantity: 1
       }],
-      metadata:    { requestId },
-      success_url: `${siteUrl}/student-dashboard.html?payment=success&req=${requestId}`,
+      metadata:    { tutorId, tutorName: tutorName || "", studentUid, studentName: studentName || "" },
+      success_url: `${siteUrl}/student-dashboard.html?payment=success`,
       cancel_url:  `${siteUrl}/student-dashboard.html?payment=cancelled`
     });
 

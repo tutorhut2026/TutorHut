@@ -29,7 +29,24 @@
 
     <div class="auth-card" style="max-width:100%">
       <h4 class="fw-700 mb-1">Student Registration</h4>
-      <p class="text-muted small mb-4">Join TutorHut to browse tutors, request sessions, and track your learning.</p>
+      <p class="text-muted small mb-3">Join TutorHut to browse tutors and connect with verified experts.</p>
+
+      <!-- Google Sign-Up -->
+      <button type="button" class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2 mb-3" id="google-signup-btn" onclick="googleSignUp()">
+        <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+          <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
+          <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
+          <path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/>
+          <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
+        </svg>
+        Sign up with Google
+      </button>
+
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <div class="flex-grow-1" style="height:1px;background:var(--border)"></div>
+        <span class="small text-muted">or fill in the form</span>
+        <div class="flex-grow-1" style="height:1px;background:var(--border)"></div>
+      </div>
 
       <form id="student-reg-form" class="th-form" data-firebase="true" novalidate>
         <div class="row g-3">
@@ -116,7 +133,42 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
 <script src="js/script.js"></script>
 <script type="module">
-  import { auth, createUserWithEmailAndPassword, updateProfile, saveToSheets, authErrorMessage } from "./js/firebase.js";
+  import {
+    auth, createUserWithEmailAndPassword, updateProfile, saveToSheets,
+    authErrorMessage, GoogleAuthProvider, signInWithPopup
+  } from "./js/firebase.js";
+
+  window.googleSignUp = async function() {
+    const btn    = document.getElementById("google-signup-btn");
+    const errDiv = document.querySelector(".form-error");
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Signing up…';
+    errDiv.classList.add("d-none");
+    try {
+      const provider = new GoogleAuthProvider();
+      const { user }  = await signInWithPopup(auth, provider);
+      const dn = user.displayName || "";
+      if (dn.startsWith("student:")) {
+        window.location.href = "browse-tutors.html";
+      } else if (dn.startsWith("tutor:")) {
+        errDiv.textContent = "This Google account is already linked to a tutor profile.";
+        errDiv.classList.remove("d-none");
+        btn.disabled = false;
+        btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg> Sign up with Google';
+      } else {
+        const firstName = (user.displayName || "Student").split(" ")[0];
+        await updateProfile(user, { displayName: `student:${firstName}` });
+        window.location.href = "browse-tutors.html";
+      }
+    } catch (ex) {
+      if (ex.code !== "auth/popup-closed-by-user") {
+        errDiv.textContent = authErrorMessage(ex.code);
+        errDiv.classList.remove("d-none");
+      }
+      btn.disabled = false;
+      btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg> Sign up with Google';
+    }
+  };
 
   const form    = document.getElementById("student-reg-form");
   const btn     = document.getElementById("s-submit");
@@ -154,9 +206,7 @@
 
       await saveToSheets({ type: "student", name: `${fname} ${lname}`, email, phone, yearGroup: year, subjects });
 
-      btn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Account Created!';
-      okDiv.classList.remove("d-none");
-      form.querySelectorAll("input, select, textarea").forEach(el => el.disabled = true);
+      window.location.href = "browse-tutors.html";
     } catch (err) {
       errDiv.textContent = authErrorMessage(err.code);
       errDiv.classList.remove("d-none");

@@ -142,8 +142,8 @@
               ${t.qualification ? `<p class="small text-muted mb-1"><i class="bi bi-mortarboard me-1"></i>${t.qualification}</p>` : ""}
               ${t.field         ? `<p class="small text-muted mb-1"><i class="bi bi-book me-1"></i>Specialises in ${t.field}</p>` : ""}
               ${t.experience    ? `<p class="small text-muted mb-3"><i class="bi bi-briefcase me-1"></i>${t.experience}</p>` : ""}
-              <a href="tuition-request.html?tutorid=${t.id}" class="btn btn-primary w-100">
-                <i class="bi bi-send me-2"></i>Request a Session
+              <a href="connect-tutor.html?tutorid=${t.id}" class="btn btn-primary w-100">
+                <i class="bi bi-person-check me-2"></i>Connect with ${t.name ? t.name.split(" ")[0] : "Tutor"}
               </a>
             </div>
 
@@ -220,8 +220,8 @@
                   <h5 class="fw-700 mb-1">Ready to learn with ${t.name ? t.name.split(" ")[0] : "this tutor"}?</h5>
                   <p class="text-muted mb-0 small">Submit a request and our team will confirm the session details.</p>
                 </div>
-                <a href="tuition-request.html?tutorid=${t.id}" class="btn btn-primary flex-shrink-0">
-                  <i class="bi bi-send me-2"></i>Request Session
+                <a href="connect-tutor.html?tutorid=${t.id}" class="btn btn-primary flex-shrink-0">
+                  <i class="bi bi-person-check me-2"></i>Connect Now
                 </a>
               </div>
             </div>

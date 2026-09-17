@@ -28,19 +28,21 @@ module.exports = async (req, res) => {
   }
 
   if (event.type === "checkout.session.completed") {
-    const session   = event.data.object;
-    const requestId = session.metadata?.requestId;
+    const session     = event.data.object;
+    const { tutorId, tutorName, studentUid, studentName } = session.metadata || {};
 
-    if (!requestId) {
-      console.warn("[stripe-webhook] No requestId in metadata");
+    if (!tutorId || !studentUid) {
+      console.warn("[stripe-webhook] Missing tutorId or studentUid in metadata");
       return res.status(200).json({ received: true });
     }
 
     const appsScriptUrl = process.env.APPS_SCRIPT_URL;
     const params = new URLSearchParams({
-      action:          "update_payment_status",
-      id:              requestId,
-      paymentStatus:   "Paid",
+      action:          "create_connection",
+      tutorId,
+      tutorName:       tutorName       || "",
+      studentUid,
+      studentName:     studentName     || "",
       paymentIntentId: session.payment_intent || "",
       paymentAmount:   String(session.amount_total || 0)
     });
@@ -48,7 +50,7 @@ module.exports = async (req, res) => {
     try {
       const r = await fetch(`${appsScriptUrl}?${params}`);
       const d = await r.json();
-      console.log("[stripe-webhook] update_payment_status →", d);
+      console.log("[stripe-webhook] create_connection →", d);
     } catch (err) {
       console.error("[stripe-webhook] Apps Script call failed:", err.message);
     }

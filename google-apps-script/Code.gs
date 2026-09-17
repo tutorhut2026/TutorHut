@@ -62,8 +62,10 @@ function getSheet(name) {
                      'dbsStatus','referencesStatus','safeguardingStatus',
                      'name','email','phone','bio','qualification','field',
                      'experience','subjects','availability','verified','status','submittedAt'],
-      Requests:     ['id','studentUid','tutorId','subject','level','message',
-                     'availability','status','submittedAt'],
+      Requests:     ['id','studentUid','tutorId','tutorName','studentName',
+                     'paymentStatus','paymentAmount','paymentIntentId',
+                     'paidAt','releasedAt','stripeTransferId','createdAt'],
+      Students:     ['uid','name','email','phone','yearGroup','subjects','createdAt','updatedAt'],
       Documents:    ['documentId','applicationId','tutorId','firebaseUid','category',
                      'driveFileId','driveFolderId','driveUrl',
                      'originalFilename','storedFilename','mimeType','fileSize',
@@ -1711,14 +1713,57 @@ function doGet(e) {
         return jsonOut({ ok: true, rowDeleted: true, authDeleted: authResult === true });
       }
 
+      case 'get_connections':
       case 'get_requests':
         return jsonOut(sheetToObjects(getSheet('Requests')));
 
+      case 'get_student_connections':
       case 'get_student_requests':
         return jsonOut(
           sheetToObjects(getSheet('Requests'))
             .filter(function(r) { return r.studentUid === String(p.uid); })
         );
+
+      case 'create_connection': {
+        var ccLock = LockService.getScriptLock();
+        ccLock.waitLock(10000);
+        try {
+          var ccTs = new Date().toISOString();
+          var ccTid = String(p.tutorId || '').trim();
+          var ccUid = String(p.studentUid || '').trim();
+          if (!ccTid || !ccUid) return jsonOut({ ok: false, error: 'tutorId and studentUid required' });
+          // Prevent duplicate connections for same student+tutor pair
+          var existing = sheetToObjects(getSheet('Requests')).filter(function(r) {
+            return String(r.tutorId    || '').trim() === ccTid &&
+                   String(r.studentUid || '').trim() === ccUid;
+          });
+          if (existing.length > 0) {
+            Logger.log('[Connection] DUPLICATE tutorId=' + ccTid + ' studentUid=' + ccUid);
+            return jsonOut({ ok: true, connectionId: existing[0].id, duplicate: true });
+          }
+          var ccId = 'conn' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+          _appendToSheet(getSheet('Requests'), {
+            id:              ccId,
+            studentUid:      ccUid,
+            tutorId:         ccTid,
+            tutorName:       String(p.tutorName    || '').trim(),
+            studentName:     String(p.studentName  || '').trim(),
+            paymentStatus:   'Paid',
+            paymentAmount:   String(p.paymentAmount    || '0').trim(),
+            paymentIntentId: String(p.paymentIntentId  || '').trim(),
+            paidAt:          ccTs,
+            releasedAt:      '',
+            stripeTransferId:'',
+            createdAt:       ccTs
+          });
+          Logger.log('[Connection] CREATED id=' + ccId + ' tutorId=' + ccTid + ' studentUid=' + ccUid);
+          return jsonOut({ ok: true, connectionId: ccId });
+        } catch (ccErr) {
+          return jsonOut({ ok: false, error: ccErr.message });
+        } finally {
+          ccLock.releaseLock();
+        }
+      }
 
       case 'update_payment_status': {
         // Called by Vercel Stripe webhook after checkout.session.completed.
@@ -1907,6 +1952,55 @@ function doGet(e) {
         });
         Logger.log('[Reviews] moderate_review id=' + mrid + ' status=' + mStatus + ' ok=' + mOk);
         return jsonOut({ ok: mOk });
+      }
+
+      case 'get_student_profile': {
+        var spUid = String(p.uid || '').trim();
+        if (!spUid) return jsonOut(null);
+        var spRows = sheetToObjects(getSheet('Students'));
+        for (var spi = 0; spi < spRows.length; spi++) {
+          if (String(spRows[spi].uid || '').trim() === spUid) return jsonOut(spRows[spi]);
+        }
+        return jsonOut(null);
+      }
+
+      case 'save_student_profile': {
+        var sp2Lock = LockService.getScriptLock();
+        sp2Lock.waitLock(10000);
+        try {
+          var sp2Uid = String(p.uid || '').trim();
+          if (!sp2Uid) return jsonOut({ ok: false, error: 'uid required' });
+          var sp2Sh  = getSheet('Students');
+          var sp2Ts  = new Date().toISOString();
+          var sp2All = sheetToObjects(sp2Sh);
+          var sp2Found = false;
+          for (var sp2i = 0; sp2i < sp2All.length; sp2i++) {
+            if (String(sp2All[sp2i].uid || '').trim() === sp2Uid) { sp2Found = true; break; }
+          }
+          if (sp2Found) {
+            updateSheetRowByKey(sp2Sh, 'uid', sp2Uid, {
+              phone:     String(p.phone     || '').trim(),
+              yearGroup: String(p.yearGroup || '').trim(),
+              subjects:  String(p.subjects  || '').trim(),
+              updatedAt: sp2Ts
+            });
+          } else {
+            _appendToSheet(sp2Sh, {
+              uid:       sp2Uid,
+              name:      String(p.name      || '').trim(),
+              email:     String(p.email     || '').trim(),
+              phone:     String(p.phone     || '').trim(),
+              yearGroup: String(p.yearGroup || '').trim(),
+              subjects:  String(p.subjects  || '').trim(),
+              createdAt: sp2Ts,
+              updatedAt: sp2Ts
+            });
+          }
+          Logger.log('[Student] save_student_profile uid=' + sp2Uid);
+          return jsonOut({ ok: true });
+        } catch (sp2Err) {
+          return jsonOut({ ok: false, error: sp2Err.message });
+        } finally { sp2Lock.releaseLock(); }
       }
 
       default:
@@ -2329,10 +2423,7 @@ function doPost(e) {
       return jsonOut(_submitReview(data));
     }
 
-    var sheetName = type === 'student_request' ? 'Requests' : null;
-    if (!sheetName) return ContentService.createTextOutput('unknown type');
-    _appendToSheet(getSheet(sheetName), data);
-    return ContentService.createTextOutput('ok');
+    return ContentService.createTextOutput('unknown type');
 
   } catch (err) {
     Logger.log('doPost error: ' + err);

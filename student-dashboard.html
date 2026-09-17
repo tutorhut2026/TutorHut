@@ -14,9 +14,14 @@
 <nav class="navbar navbar-expand-lg sticky-top" id="site-navbar"></nav>
 
 <div class="page-header">
-  <div class="container">
-    <h1 id="dashboard-heading">My Dashboard</h1>
-    <p id="dashboard-sub">Track your tuition requests and manage your sessions.</p>
+  <div class="container d-flex align-items-start justify-content-between flex-wrap gap-2">
+    <div>
+      <h1 id="dashboard-heading">My Dashboard</h1>
+      <p id="dashboard-sub" class="mb-0">Track your tuition requests and manage your sessions.</p>
+    </div>
+    <a href="student-settings.html" class="btn btn-outline-light btn-sm mt-1" title="Account Settings">
+      <i class="bi bi-gear me-1"></i>Settings
+    </a>
   </div>
 </div>
 
@@ -94,7 +99,7 @@
 <script type="module">
   import {
     auth, onAuthStateChanged, signOut,
-    getStudentRequests, getApprovedTutors, initiatePayment,
+    getStudentConnections, getApprovedTutors,
     submitReview, getStudentReviews
   } from "./js/firebase.js";
 
@@ -145,70 +150,62 @@
 
     const name = dn.replace("student:", "");
     document.getElementById("dashboard-heading").textContent = `Welcome, ${name}!`;
-    document.getElementById("dashboard-sub").textContent = "Here are your tuition requests and approved sessions.";
+    document.getElementById("dashboard-sub").textContent = "Your connected tutors and session history.";
 
     // Load data
-    const [requests, approvedTutors, myReviews] = await Promise.all([
-      getStudentRequests(user.uid),
+    const [connections, approvedTutors, myReviews] = await Promise.all([
+      getStudentConnections(user.uid),
       getApprovedTutors(),
       getStudentReviews()
     ]);
-    // Set of requestIds this student has already reviewed
     window._reviewedIds = new Set((myReviews || []).map(r => r.requestId));
 
     const tutorMap = {};
     approvedTutors.forEach(t => { tutorMap[t.id] = t; });
 
-    const pending  = requests.filter(r => r.status === "pending").length;
-    const approved = requests.filter(r => r.status === "approved").length;
-    const rejected = requests.filter(r => r.status === "rejected").length;
+    const totalConns   = connections.length;
+    const awaitRelease = connections.filter(c => String(c.paymentStatus||"").toLowerCase() === "paid").length;
+    const reviewsLeft  = connections.filter(c => {
+      const ps = String(c.paymentStatus||"").toLowerCase();
+      return ps === "released" && !window._reviewedIds.has(c.id);
+    }).length;
 
     gate.style.display = "none";
     content.insertAdjacentHTML("beforeend", `
       <!-- Stats -->
       <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-4">
           <div class="dash-stat-card">
-            <div class="stat-icon blue"><i class="bi bi-list-check" style="color:var(--primary)"></i></div>
-            <div><div class="stat-value">${requests.length}</div><div class="stat-label">Total Requests</div></div>
+            <div class="stat-icon blue"><i class="bi bi-people" style="color:var(--primary)"></i></div>
+            <div><div class="stat-value">${totalConns}</div><div class="stat-label">Tutors Connected</div></div>
           </div>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-4">
           <div class="dash-stat-card">
             <div class="stat-icon amber"><i class="bi bi-hourglass-split" style="color:var(--accent)"></i></div>
-            <div><div class="stat-value">${pending}</div><div class="stat-label">Pending</div></div>
+            <div><div class="stat-value">${awaitRelease}</div><div class="stat-label">Awaiting Payout</div></div>
           </div>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-4">
           <div class="dash-stat-card">
-            <div class="stat-icon green"><i class="bi bi-check2-circle" style="color:var(--success)"></i></div>
-            <div><div class="stat-value">${approved}</div><div class="stat-label">Approved</div></div>
-          </div>
-        </div>
-        <div class="col-6 col-md-3">
-          <div class="dash-stat-card">
-            <div class="stat-icon red"><i class="bi bi-x-circle" style="color:var(--danger)"></i></div>
-            <div><div class="stat-value">${rejected}</div><div class="stat-label">Rejected</div></div>
+            <div class="stat-icon green"><i class="bi bi-star" style="color:var(--success)"></i></div>
+            <div><div class="stat-value">${reviewsLeft}</div><div class="stat-label">Reviews to Leave</div></div>
           </div>
         </div>
       </div>
 
-      <!-- Requests Table -->
+      <!-- Tutors Table -->
       <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-          <span><i class="bi bi-calendar-check me-2"></i>My Tuition Requests</span>
-          <a href="browse-tutors.html" class="btn btn-primary btn-sm"><i class="bi bi-plus me-1"></i>New Booking</a>
+          <span><i class="bi bi-people me-2"></i>My Tutors</span>
+          <a href="browse-tutors.html" class="btn btn-primary btn-sm"><i class="bi bi-plus me-1"></i>Find a Tutor</a>
         </div>
         <div class="table-responsive">
           <table class="table mb-0">
             <thead>
               <tr>
                 <th>Tutor</th>
-                <th>Subject</th>
-                <th>Day &amp; Time</th>
-                <th>Level</th>
-                <th>Submitted</th>
-                <th>Status</th>
+                <th>Connected On</th>
                 <th>Payment</th>
                 <th>Actions</th>
               </tr>
@@ -220,97 +217,64 @@
 
       <!-- Browse CTA -->
       <div class="card p-4 text-center" style="background:var(--primary-light);border-color:rgba(37,99,235,.2)">
-        <h5 class="fw-700 mb-2">Want to book another session?</h5>
-        <p class="text-muted mb-3 small">Browse all approved tutors and submit a new session request.</p>
+        <h5 class="fw-700 mb-2">Looking for another tutor?</h5>
+        <p class="text-muted mb-3 small">Browse all verified tutors and pay to connect.</p>
         <a href="browse-tutors.html" class="btn btn-primary">Browse Tutors</a>
       </div>
     `);
 
     const tbody = document.getElementById("requests-tbody");
 
-    if (!requests.length) {
-      tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-5">
+    if (!connections.length) {
+      tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-5">
         <i class="bi bi-inbox fs-1 d-block mb-2 opacity-25"></i>
-        No requests yet. <a href="browse-tutors.html">Browse tutors</a> to make your first booking.
+        No connections yet. <a href="browse-tutors.html">Browse tutors</a> to get started.
       </td></tr>`;
     } else {
-      requests.forEach(req => {
-        const date = req.submittedAt ? new Date(req.submittedAt).toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" }) : "—";
-
-        const statusBadge = {
-          pending:  '<span class="badge bg-warning text-dark">Pending Review</span>',
-          approved: '<span class="badge bg-success">Approved</span>',
-          rejected: '<span class="badge bg-danger">Rejected</span>'
-        }[req.status] || '<span class="badge bg-secondary">Unknown</span>';
+      connections.forEach(req => {
+        const date = (req.paidAt || req.createdAt)
+          ? new Date(req.paidAt || req.createdAt).toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" })
+          : "—";
 
         const ps = String(req.paymentStatus || "").toLowerCase();
         const paymentBadge = ps === "released" ? '<span class="badge bg-success">Released</span>'
-          : ps === "paid"    ? '<span class="badge bg-info text-dark">Paid</span>'
-          : req.status === "approved" ? '<span class="badge bg-warning text-dark">Unpaid</span>'
-          : '<span class="text-muted small">—</span>';
+          : ps === "paid" ? '<span class="badge bg-info text-dark">Paid</span>'
+          : '<span class="badge bg-secondary">Pending</span>';
 
-        const contactAvailable = req.status === "approved" && (ps === "paid" || ps === "released");
-        const needsPayment     = req.status === "approved" && !contactAvailable;
+        const isReviewed = window._reviewedIds?.has(req.id);
+        const reviewBtn  = isReviewed
+          ? `<span class="badge bg-success ms-1"><i class="bi bi-check-circle me-1"></i>Reviewed</span>`
+          : `<button class="btn btn-outline-warning btn-sm ms-1" onclick="openReview('${req.id}','${req.tutorId}','${(req.tutorName||'').replace(/'/g,"\\'")}')">
+              <i class="bi bi-star me-1"></i>Review
+             </button>`;
 
         let actions = "";
-        if (contactAvailable) {
-          const isReleased = ps === "released";
-          const isReviewed = window._reviewedIds?.has(req.id);
-          const reviewBtn  = isReviewed
-            ? `<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Reviewed</span>`
-            : `<button class="btn btn-outline-warning btn-sm" onclick="openReview('${req.id}','${req.tutorId}','${(req.tutorName||'').replace(/'/g,"\\'")}')">
-                <i class="bi bi-star me-1"></i>Review
-               </button>`;
+        if (ps === "paid" || ps === "released") {
           actions = `<div class="d-flex gap-1 flex-wrap align-items-center">
             <button class="btn btn-success btn-sm" onclick="showContact('${req.tutorId}')">
-              <i class="bi bi-person-lines-fill me-1"></i>Tutor Contact
+              <i class="bi bi-person-lines-fill me-1"></i>View Contact
             </button>
-            ${isReleased ? reviewBtn : ""}
+            ${ps === "released" ? reviewBtn : ""}
           </div>`;
-        } else if (needsPayment) {
-          actions = `<button class="btn btn-primary btn-sm" id="pay-btn-${req.id}" onclick="payNow('${req.id}')">
-            <i class="bi bi-credit-card me-1"></i>Pay Introduction Fee
-          </button>`;
-        } else if (req.status === "pending") {
-          actions = `<span class="text-muted small">Awaiting review</span>`;
         } else {
-          actions = `<a href="browse-tutors.html" class="btn btn-outline-primary btn-sm">Book Again</a>`;
+          actions = `<span class="text-muted small">Processing…</span>`;
         }
 
         tbody.insertAdjacentHTML("beforeend", `
           <tr>
-            <td><div class="fw-600">${req.tutorName || "—"}</div></td>
-            <td>${req.subject || "—"}</td>
-            <td class="small">${req.day || "—"}${req.time ? ` · ${req.time}` : ""}</td>
-            <td class="small">${req.level || "—"}</td>
+            <td>
+              <div class="fw-600">${req.tutorName || "—"}</div>
+              <a href="tutor-profile.html?id=${req.tutorId}" class="small text-muted">View Profile</a>
+            </td>
             <td class="small">${date}</td>
-            <td>${statusBadge}</td>
             <td>${paymentBadge}</td>
             <td>${actions}</td>
           </tr>`);
       });
     }
 
-    // Expose tutorMap for the contact modal
     window._tutorMap = tutorMap;
   });
-
-  window.payNow = async function(requestId) {
-    const btn = document.getElementById("pay-btn-" + requestId);
-    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Redirecting…'; }
-    try {
-      const result = await initiatePayment(requestId);
-      if (result.url) {
-        window.location.href = result.url;
-      } else {
-        alert("Payment could not be started: " + (result.error || "Unknown error"));
-        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-credit-card me-1"></i>Pay Introduction Fee'; }
-      }
-    } catch (err) {
-      alert("Failed to start payment. Please try again.");
-      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-credit-card me-1"></i>Pay Introduction Fee'; }
-    }
-  };
 
   // ── Review modal ──
   let _reviewRequestId = null;

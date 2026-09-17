@@ -1,10 +1,17 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   getAuth,
+  GoogleAuthProvider,
+  EmailAuthProvider,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signInWithPopup,
+  reauthenticateWithCredential,
+  reauthenticateWithPopup,
   onAuthStateChanged,
   updateProfile,
+  updatePassword,
+  deleteUser,
   signOut
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
@@ -21,8 +28,10 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
 export {
+  GoogleAuthProvider, EmailAuthProvider,
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  onAuthStateChanged, updateProfile, signOut
+  signInWithPopup, reauthenticateWithCredential, reauthenticateWithPopup,
+  onAuthStateChanged, updateProfile, updatePassword, deleteUser, signOut
 };
 
 export const SHEETS_URL  = "https://script.google.com/macros/s/AKfycbwSrtU4mu1NzhW4Hl0jhAykSvDJB_XSA5FBCHPifZ62UqoyB3zQiCBFKXwye1BdGTNJhw/exec";
@@ -153,11 +162,17 @@ export async function updateDbsVerification(id, dbsVerificationStatus, dbsVerifi
 
 /* ── Stripe Payment ── */
 
-export async function initiatePayment(requestId) {
-  const res = await fetch("/api/create-checkout", {
+export async function initiatePayment(tutorId, tutorName, studentName) {
+  const user = auth.currentUser;
+  const res  = await fetch("/api/create-checkout", {
     method:  "POST",
     headers: { "Content-Type": "application/json" },
-    body:    JSON.stringify({ requestId })
+    body:    JSON.stringify({
+      tutorId,
+      tutorName:   tutorName   || "",
+      studentUid:  user ? user.uid : "",
+      studentName: studentName || ""
+    })
   });
   return await res.json(); // { url } or { error }
 }
@@ -171,24 +186,50 @@ export async function getStripeOnboardingLink(applicationId) {
   return await res.json(); // { url } or { error }
 }
 
-/* ── Student Requests ── */
-export async function saveStudentRequest(uid, data) {
-  const id = genId();
-  await sheetsPost({ type: "student_request", id, studentUid: uid, ...data });
-  return id;
+/* ── Student Profile ── */
+
+export async function getStudentProfile(uid) {
+  try {
+    const url  = SHEETS_URL + "?" + new URLSearchParams({ action: "get_student_profile", uid }).toString();
+    const res  = await fetch(url);
+    const data = await res.json();
+    return data || null;
+  } catch (e) {
+    console.warn("getStudentProfile failed:", e);
+    return null;
+  }
 }
 
-export async function getStudentRequests(uid) {
-  return sheetsGet({ action: "get_student_requests", uid });
+export async function saveStudentProfile({ uid, name, email, phone, yearGroup, subjects }) {
+  try {
+    const url = SHEETS_URL + "?" + new URLSearchParams({
+      action: "save_student_profile",
+      uid, name: name || "", email: email || "",
+      phone: phone || "", yearGroup: yearGroup || "", subjects: subjects || ""
+    }).toString();
+    const res = await fetch(url);
+    return await res.json();
+  } catch (e) {
+    console.warn("saveStudentProfile failed:", e);
+    return { ok: false, error: "Network error" };
+  }
 }
 
-export async function getAllRequests() {
-  return sheetsGet({ action: "get_requests" });
+/* ── Connections (replaces Student Requests) ── */
+
+export async function getStudentConnections(uid) {
+  return sheetsGet({ action: "get_student_connections", uid });
 }
 
-export async function updateRequestStatus(id, status) {
-  return sheetsGet({ action: "update_status", sheet: "Requests", id, status });
+// Keep alias so any remaining callers don't break immediately
+export const getStudentRequests = getStudentConnections;
+
+export async function getAllConnections() {
+  return sheetsGet({ action: "get_connections" });
 }
+
+// Keep alias
+export const getAllRequests = getAllConnections;
 
 /* ── Document Uploads ── */
 

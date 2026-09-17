@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tuition Request Approval – TutorHut Admin</title>
+  <title>Connections &amp; Payments – TutorHut Admin</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
   <link rel="stylesheet" href="css/style.css" />
@@ -20,10 +20,10 @@
       <ul class="nav flex-column">
         <li class="nav-item"><a href="admin-dashboard.html" class="nav-link"><i class="bi bi-grid-1x2"></i> Dashboard</a></li>
         <li class="nav-item"><a href="tutor-approval.html" class="nav-link"><i class="bi bi-person-check"></i> Tutor Approvals</a></li>
-        <li class="nav-item"><a href="request-approval.html" class="nav-link active"><i class="bi bi-clipboard-check"></i> Tuition Requests</a></li>
+        <li class="nav-item"><a href="request-approval.html" class="nav-link active"><i class="bi bi-credit-card"></i> Connections</a></li>
+        <li class="nav-item"><a href="admin-reviews.html" class="nav-link"><i class="bi bi-star"></i> Reviews</a></li>
         <li class="nav-item"><a href="browse-tutors.html" class="nav-link"><i class="bi bi-people"></i> All Tutors</a></li>
         <li class="nav-item"><a href="admin-resources.html" class="nav-link"><i class="bi bi-folder2-open"></i> Resources</a></li>
-        <li class="nav-item"><a href="#" class="nav-link pe-none opacity-50"><i class="bi bi-bar-chart"></i> Reports</a></li>
         <li class="nav-item mt-3"><a href="admin-login.html" class="nav-link text-danger"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
       </ul>
     </nav>
@@ -33,49 +33,40 @@
   <main class="dash-main flex-grow-1">
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
       <div>
-        <h4 class="fw-700 mb-0">Tuition Request Management</h4>
-        <p class="text-muted small mb-0">Review and approve or reject student tuition requests.</p>
+        <h4 class="fw-700 mb-0">Connections &amp; Payments</h4>
+        <p class="text-muted small mb-0">All student–tutor connections and payment status.</p>
       </div>
-      <div class="d-flex gap-2">
-        <input type="search" class="form-control form-control-sm" placeholder="Search requests..." style="width:200px" />
-        <select class="form-select form-select-sm" style="width:140px">
-          <option>All Status</option>
-          <option>Pending</option>
-          <option>Approved</option>
-          <option>Rejected</option>
-        </select>
-      </div>
+      <button class="btn btn-sm btn-outline-secondary" onclick="loadConnections()">
+        <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+      </button>
     </div>
 
     <!-- Stats -->
     <div class="row g-3 mb-4">
       <div class="col-sm-4">
         <div class="dash-stat-card">
+          <div class="stat-icon blue"><i class="bi bi-people" style="color:var(--primary)"></i></div>
+          <div><div class="stat-value" id="stat-total">–</div><div class="stat-label">Total Connections</div></div>
+        </div>
+      </div>
+      <div class="col-sm-4">
+        <div class="dash-stat-card">
           <div class="stat-icon amber"><i class="bi bi-hourglass-split" style="color:var(--accent)"></i></div>
-          <div><div class="stat-value" id="stat-pending">–</div><div class="stat-label">Pending</div></div>
+          <div><div class="stat-value" id="stat-paid">–</div><div class="stat-label">Awaiting Release</div></div>
         </div>
       </div>
       <div class="col-sm-4">
         <div class="dash-stat-card">
           <div class="stat-icon green"><i class="bi bi-check2-circle" style="color:var(--success)"></i></div>
-          <div><div class="stat-value" id="stat-approved">–</div><div class="stat-label">Approved</div></div>
-        </div>
-      </div>
-      <div class="col-sm-4">
-        <div class="dash-stat-card">
-          <div class="stat-icon red"><i class="bi bi-x-circle" style="color:var(--danger)"></i></div>
-          <div><div class="stat-value" id="stat-rejected">–</div><div class="stat-label">Rejected</div></div>
+          <div><div class="stat-value" id="stat-released">–</div><div class="stat-label">Released</div></div>
         </div>
       </div>
     </div>
 
-    <!-- All Requests Table -->
+    <!-- Connections Table -->
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="bi bi-clipboard-list me-2"></i>Tuition Requests</span>
-        <button class="btn btn-sm btn-outline-secondary" onclick="loadRequests()">
-          <i class="bi bi-arrow-clockwise me-1"></i>Refresh
-        </button>
+        <span><i class="bi bi-credit-card me-2"></i>All Connections</span>
       </div>
       <div class="table-responsive">
         <table class="table mb-0">
@@ -83,16 +74,14 @@
             <tr>
               <th>Student</th>
               <th>Tutor</th>
-              <th>Subject</th>
-              <th>Day &amp; Time</th>
-              <th>Submitted</th>
-              <th>Status</th>
-              <th>Payment</th>
-              <th>Actions</th>
+              <th>Connected On</th>
+              <th>Amount</th>
+              <th>Payment Status</th>
+              <th>Transfer ID</th>
             </tr>
           </thead>
-          <tbody id="requests-tbody">
-            <tr><td colspan="7" class="text-center text-muted py-4">
+          <tbody id="connections-tbody">
+            <tr><td colspan="6" class="text-center text-muted py-4">
               <span class="spinner-border spinner-border-sm me-2"></span>Loading…
             </td></tr>
           </tbody>
@@ -105,79 +94,69 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
 <script src="js/script.js"></script>
 <script type="module">
-  import { auth, onAuthStateChanged, ADMIN_EMAIL, getAllRequests, updateRequestStatus } from "./js/firebase.js";
+  import { auth, onAuthStateChanged, ADMIN_EMAIL, getAllConnections } from "./js/firebase.js";
 
-  window.loadRequests = loadRequests;
+  window.loadConnections = loadConnections;
 
   onAuthStateChanged(auth, (user) => {
     if (!user || user.email !== ADMIN_EMAIL) {
-      document.getElementById("requests-tbody").innerHTML = `
-        <tr><td colspan="7" class="text-center text-warning py-4">
+      document.getElementById("connections-tbody").innerHTML = `
+        <tr><td colspan="6" class="text-center text-warning py-4">
           <i class="bi bi-lock me-2"></i>Please <a href="admin-login.html">log in as admin</a>.
         </td></tr>`;
       return;
     }
-    loadRequests();
+    loadConnections();
   });
 
-  async function loadRequests() {
-    const tbody = document.getElementById("requests-tbody");
-    tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">
+  async function loadConnections() {
+    const tbody = document.getElementById("connections-tbody");
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">
       <span class="spinner-border spinner-border-sm me-2"></span>Loading…</td></tr>`;
 
-    const all = await getAllRequests();
+    const all = await getAllConnections();
 
-    // Update stats
-    document.getElementById("stat-pending")  && (document.getElementById("stat-pending").textContent  = all.filter(r => r.status==="pending").length);
-    document.getElementById("stat-approved") && (document.getElementById("stat-approved").textContent = all.filter(r => r.status==="approved").length);
-    document.getElementById("stat-rejected") && (document.getElementById("stat-rejected").textContent = all.filter(r => r.status==="rejected").length);
+    const paid     = all.filter(c => String(c.paymentStatus||"").toLowerCase() === "paid").length;
+    const released = all.filter(c => String(c.paymentStatus||"").toLowerCase() === "released").length;
+    document.getElementById("stat-total").textContent    = all.length;
+    document.getElementById("stat-paid").textContent     = paid;
+    document.getElementById("stat-released").textContent = released;
 
     if (!all.length) {
-      tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-5">
-        <i class="bi bi-inbox fs-1 d-block mb-2 opacity-25"></i>No requests yet.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-5">
+        <i class="bi bi-inbox fs-1 d-block mb-2 opacity-25"></i>No connections yet.</td></tr>`;
       return;
     }
 
     tbody.innerHTML = "";
-    all.forEach(req => {
-      const date = req.submittedAt ? new Date(req.submittedAt).toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" }) : "—";
+    all.slice().reverse().forEach(conn => {
+      const date = (conn.paidAt || conn.createdAt)
+        ? new Date(conn.paidAt || conn.createdAt).toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" })
+        : "—";
 
-      const statusBadge = {
-        pending:  '<span class="badge bg-warning text-dark">Pending</span>',
-        approved: '<span class="badge bg-success">Approved</span>',
-        rejected: '<span class="badge bg-danger">Rejected</span>'
-      }[req.status] || '<span class="badge bg-secondary">Unknown</span>';
-
-      const ps = String(req.paymentStatus || "").toLowerCase();
+      const ps = String(conn.paymentStatus || "").toLowerCase();
       const payBadge = ps === "released" ? '<span class="badge bg-success">Released</span>'
-        : ps === "paid"    ? '<span class="badge bg-info text-dark">Paid</span>'
-        : req.status === "approved" ? '<span class="badge bg-warning text-dark">Unpaid</span>'
-        : '<span class="text-muted small">—</span>';
+        : ps === "paid" ? '<span class="badge bg-info text-dark">Paid</span>'
+        : '<span class="badge bg-secondary">Unknown</span>';
 
-      const actions = req.status === "pending"
-        ? `<button class="btn btn-success btn-sm me-1" onclick="decide('${req.id}','approved')">Approve</button>
-           <button class="btn btn-outline-danger btn-sm" onclick="decide('${req.id}','rejected')">Reject</button>`
-        : `<span class="text-muted small">Done</span>`;
+      const amountStr = conn.paymentAmount
+        ? `£${(parseInt(conn.paymentAmount) / 100).toFixed(2)}`
+        : "—";
 
       tbody.insertAdjacentHTML("beforeend", `
-        <tr id="reqrow-${req.id}">
-          <td><div class="fw-600">${req.studentName||"—"}</div><div class="small text-muted">${req.studentEmail||""}</div></td>
-          <td class="small">${req.tutorName||"—"}</td>
-          <td class="small">${req.subject||"—"}</td>
-          <td class="small">${req.day||"—"}${req.time ? ` · ${req.time}` : ""}</td>
+        <tr>
+          <td>
+            <div class="fw-600">${conn.studentName || "—"}</div>
+            <div class="small text-muted">${conn.studentUid ? conn.studentUid.slice(0,8)+"…" : ""}</div>
+          </td>
+          <td class="fw-600">${conn.tutorName || "—"}</td>
           <td class="small">${date}</td>
-          <td>${statusBadge}</td>
+          <td class="small">${amountStr}</td>
           <td>${payBadge}</td>
-          <td>${actions}</td>
+          <td class="small text-muted">${conn.stripeTransferId || "—"}</td>
         </tr>`);
     });
   }
-
-  window.decide = async function(id, status) {
-    document.querySelectorAll(`#reqrow-${id} button`).forEach(b => b.disabled = true);
-    await updateRequestStatus(id, status);
-    loadRequests();
-  };
 </script>
 <script src="js/theme.js"></script>
 </body>

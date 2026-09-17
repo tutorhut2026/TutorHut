@@ -20,7 +20,8 @@
       <ul class="nav flex-column">
         <li class="nav-item"><a href="admin-dashboard.html" class="nav-link active"><i class="bi bi-grid-1x2"></i> Dashboard</a></li>
         <li class="nav-item"><a href="tutor-approval.html" class="nav-link"><i class="bi bi-person-check"></i> Tutor Approvals</a></li>
-        <li class="nav-item"><a href="request-approval.html" class="nav-link"><i class="bi bi-clipboard-check"></i> Tuition Requests</a></li>
+        <li class="nav-item"><a href="request-approval.html" class="nav-link"><i class="bi bi-credit-card"></i> Connections</a></li>
+        <li class="nav-item"><a href="admin-reviews.html" class="nav-link"><i class="bi bi-star"></i> Reviews</a></li>
         <li class="nav-item"><a href="browse-tutors.html" class="nav-link"><i class="bi bi-people"></i> All Tutors</a></li>
         <li class="nav-item"><a href="admin-resources.html" class="nav-link"><i class="bi bi-folder2-open"></i> Resources</a></li>
         <li class="nav-item"><a href="#" class="nav-link pe-none opacity-50"><i class="bi bi-bar-chart"></i> Reports</a></li>
@@ -57,8 +58,8 @@
       </div>
       <div class="col-6 col-lg-3">
         <div class="dash-stat-card">
-          <div class="stat-icon green"><i class="bi bi-clipboard-check" style="color:var(--success)"></i></div>
-          <div><div class="stat-value" id="stat-pending-reqs">–</div><div class="stat-label">Pending Requests</div></div>
+          <div class="stat-icon green"><i class="bi bi-people" style="color:var(--success)"></i></div>
+          <div><div class="stat-value" id="stat-connections">–</div><div class="stat-label">Connections</div></div>
         </div>
       </div>
       <div class="col-6 col-lg-3">
@@ -87,19 +88,19 @@
         </div>
       </div>
 
-      <!-- Pending Tuition Requests -->
+      <!-- Connections & Payments -->
       <div class="col-lg-6">
         <div class="card h-100">
           <div class="card-header d-flex justify-content-between align-items-center">
-            <span><i class="bi bi-clipboard-check me-2"></i>Pending Tuition Requests</span>
+            <span><i class="bi bi-credit-card me-2"></i>Connections &amp; Payments</span>
             <a href="request-approval.html" class="small text-primary">View All</a>
           </div>
           <div class="card-body d-flex flex-column align-items-center justify-content-center text-center py-5 text-muted">
-            <i class="bi bi-inbox fs-1 mb-2 opacity-25"></i>
-            <p class="mb-0 small">No pending requests yet.</p>
+            <i class="bi bi-people fs-1 mb-2 opacity-25"></i>
+            <p class="mb-0 small">Student–tutor connections appear here after payment.</p>
           </div>
           <div class="card-footer bg-transparent text-center">
-            <a href="request-approval.html" class="btn btn-primary btn-sm">Review All Requests</a>
+            <a href="request-approval.html" class="btn btn-primary btn-sm">View All Connections</a>
           </div>
         </div>
       </div>
@@ -142,17 +143,17 @@
   });
 </script>
 <script type="module">
-  import { auth, onAuthStateChanged, ADMIN_EMAIL, getTutorApplications, getAllRequests } from "./js/firebase.js";
+  import { auth, onAuthStateChanged, ADMIN_EMAIL, getTutorApplications, getAllConnections } from "./js/firebase.js";
 
   onAuthStateChanged(auth, async (user) => {
     if (!user || user.email !== ADMIN_EMAIL) return;
 
-    const [apps, reqs] = await Promise.all([getTutorApplications(), getAllRequests()]);
+    const [apps, conns] = await Promise.all([getTutorApplications(), getAllConnections()]);
 
-    document.getElementById("stat-tutors").textContent      = apps.filter(a => a.status === "approved").length;
-    document.getElementById("stat-pending-apps").textContent = apps.filter(a => a.status === "pending").length;
-    document.getElementById("stat-pending-reqs").textContent = reqs.filter(r => r.status === "pending").length;
-    document.getElementById("stat-total-apps").textContent   = apps.length;
+    document.getElementById("stat-tutors").textContent       = apps.filter(a => a.status === "approved").length;
+    document.getElementById("stat-pending-apps").textContent  = apps.filter(a => a.status === "pending").length;
+    document.getElementById("stat-connections").textContent   = conns.length;
+    document.getElementById("stat-total-apps").textContent    = apps.length;
   });
 </script>
 <script src="js/theme.js"></script>
