@@ -195,27 +195,27 @@
             </div>
           </div>
 
-          <!-- DBS Update Service (Optional) -->
+          <!-- DBS Update Service -->
           <div class="form-section">
-            <div class="form-section-title"><i class="bi bi-shield-check me-2"></i>DBS Update Service <span class="badge bg-secondary fw-normal fs-8 ms-2" style="font-size:0.7rem;">Optional</span></div>
-            <div class="alert alert-light border d-flex align-items-start gap-2 mb-3 py-2 px-3">
-              <i class="bi bi-info-circle text-primary mt-1 flex-shrink-0"></i>
-              <small>If you have registered your Enhanced DBS certificate with the <strong>Government's DBS Update Service</strong>, enter your details below. This allows us to verify your DBS status online without requiring a new check. You can also add this later from your document upload portal. <a href="https://www.gov.uk/dbs-update-service" target="_blank" rel="noopener">Learn more about the DBS Update Service <i class="bi bi-box-arrow-up-right"></i></a></small>
+            <div class="form-section-title"><i class="bi bi-shield-check me-2"></i>DBS Update Service</div>
+            <div class="alert alert-info d-flex align-items-start gap-2 mb-3 py-2 px-3">
+              <i class="bi bi-info-circle-fill text-primary mt-1 flex-shrink-0"></i>
+              <small>You must be registered with the <strong>Government's DBS Update Service</strong> to apply. Enter your certificate details below — we use these to verify your DBS status online. <a href="https://www.gov.uk/dbs-update-service" target="_blank" rel="noopener">Learn more <i class="bi bi-box-arrow-up-right"></i></a></small>
             </div>
             <div class="row g-3">
               <div class="col-sm-6">
-                <label class="form-label">DBS Certificate Number</label>
-                <input id="t-dbs-cert" type="text" class="form-control" placeholder="e.g. 001234567890" maxlength="20" />
+                <label class="form-label">DBS Certificate Number *</label>
+                <input id="t-dbs-cert" type="text" class="form-control" placeholder="e.g. 001234567890" maxlength="20" required />
                 <div class="form-text">The 12-digit number printed on your DBS certificate.</div>
               </div>
               <div class="col-sm-6">
-                <label class="form-label">Update Service Subscription ID</label>
-                <input id="t-dbs-service-id" type="text" class="form-control" placeholder="e.g. 1234567890" maxlength="20" />
+                <label class="form-label">Update Service Subscription ID *</label>
+                <input id="t-dbs-service-id" type="text" class="form-control" placeholder="e.g. 1234567890" maxlength="20" required />
                 <div class="form-text">Your reference number from the DBS Update Service.</div>
               </div>
               <div class="col-sm-6">
-                <label class="form-label">DBS Certificate Issue Date</label>
-                <input id="t-dbs-issued" type="date" class="form-control" />
+                <label class="form-label">DBS Certificate Issue Date *</label>
+                <input id="t-dbs-issued" type="date" class="form-control" required />
                 <div class="form-text">The date printed on your DBS certificate.</div>
               </div>
             </div>
@@ -337,10 +337,16 @@
     const rateUniversity = parseInt(document.getElementById("t-rate-uni").value)  || 0;
     const rateAdult    = parseInt(document.getElementById("t-rate-adult").value)  || 0;
 
-    // DBS Update Service (optional)
     const dbsCertificateNumber = document.getElementById("t-dbs-cert").value.trim();
     const dbsUpdateServiceId   = document.getElementById("t-dbs-service-id").value.trim();
     const dbsIssuedDate        = document.getElementById("t-dbs-issued").value;
+
+    if (!dbsCertificateNumber || !dbsUpdateServiceId || !dbsIssuedDate) {
+      errDiv.textContent = "DBS certificate number, Update Service ID, and issue date are all required.";
+      errDiv.classList.remove("d-none");
+      document.getElementById("t-dbs-cert").focus();
+      return;
+    }
 
     if (pwd !== confirm) {
       errDiv.textContent = "Passwords do not match.";
@@ -375,9 +381,8 @@
         availability: [days && `Days: ${days}`, times && `Times: ${times}`].filter(Boolean).join(" | "),
         // Hourly rates per level (0 = rate on request)
         rateKS3, rateGCSE, rateALevel, rateUniversity, rateAdult,
-        // DBS Update Service (optional — empty string if not provided)
         dbsCertificateNumber, dbsUpdateServiceId, dbsIssuedDate,
-        dbsVerificationStatus: dbsUpdateServiceId ? 'Unverified' : '',
+        dbsVerificationStatus: 'Unverified',
         status: "pending",
         verified: "false",
         submittedAt: new Date().toISOString()
