@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -8,6 +8,37 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
   <link rel="stylesheet" href="css/style.css" />
   <script>if(localStorage.theme==='dark')document.documentElement.dataset.theme='dark'</script>
+  <style>
+    .reg-accordion .accordion-item {
+      border: 1px solid var(--border, #e5e7eb);
+      border-radius: 12px !important;
+      margin-bottom: 1rem;
+      overflow: hidden;
+    }
+    .reg-accordion .accordion-button {
+      font-weight: 600;
+      font-size: 0.95rem;
+      background: var(--surface, #fff);
+      color: var(--text, #111);
+    }
+    .reg-accordion .accordion-button:not(.collapsed) {
+      background: #eef2ff;
+      color: var(--primary, #4f46e5);
+      box-shadow: none;
+    }
+    .reg-accordion .accordion-body { padding: 1.5rem; }
+    .rate-row {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      padding: 0.65rem 0;
+      border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+    }
+    .rate-row:last-child { border-bottom: none; }
+    .rate-row .form-check { min-width: 200px; margin-bottom: 0; }
+    .rate-wrap { display: none; max-width: 180px; }
+    .rate-wrap.visible { display: flex; }
+  </style>
 </head>
 <body>
 
@@ -26,7 +57,6 @@
     <div class="row justify-content-center">
       <div class="col-lg-8">
 
-        <!-- Sign-in banner -->
         <div class="alert alert-light border d-flex align-items-center justify-content-between mb-4 py-3 px-4">
           <span class="fw-600 small">Already have a tutor account?</span>
           <a href="login.html?type=tutor" class="btn btn-primary btn-sm ms-3">
@@ -34,246 +64,314 @@
           </a>
         </div>
 
-        <!-- Info Alert -->
         <div class="alert alert-info d-flex align-items-start gap-2 mb-4">
           <i class="bi bi-info-circle-fill mt-1 flex-shrink-0"></i>
           <div><strong>How it works:</strong> Submit your application with your details, qualifications, subjects and availability. Our admin team will review and approve or contact you within 3–5 working days.</div>
         </div>
 
         <form id="tutor-reg-form" class="th-form" data-firebase="true" novalidate>
-          <!-- Personal Details -->
-          <div class="form-section">
-            <div class="form-section-title"><i class="bi bi-person me-2"></i>Personal Details</div>
-            <div class="row g-3">
-              <div class="col-sm-6">
-                <label class="form-label">First Name *</label>
-                <input id="t-fname" type="text" class="form-control" placeholder="e.g. Sarah" required />
-              </div>
-              <div class="col-sm-6">
-                <label class="form-label">Last Name *</label>
-                <input id="t-lname" type="text" class="form-control" placeholder="e.g. Mitchell" required />
-              </div>
-              <div class="col-sm-6">
-                <label class="form-label">Email Address *</label>
-                <input id="t-email" type="email" class="form-control" placeholder="you@example.com" required />
-              </div>
-              <div class="col-sm-6">
-                <label class="form-label">Phone Number *</label>
-                <input id="t-phone" type="tel" class="form-control" placeholder="e.g. 07700 900000" required />
-              </div>
-              <div class="col-12">
-                <label class="form-label">Short Bio / Introduction *</label>
-                <textarea id="t-bio" class="form-control" rows="3" placeholder="Tell us a bit about yourself and your teaching approach..." required></textarea>
-              </div>
-            </div>
-          </div>
+          <div class="accordion reg-accordion" id="regAccordion">
 
-          <!-- Qualifications -->
-          <div class="form-section">
-            <div class="form-section-title"><i class="bi bi-award me-2"></i>Qualifications &amp; Experience</div>
-            <div class="row g-3">
-              <div class="col-sm-6">
-                <label class="form-label">Highest Qualification *</label>
-                <select id="t-qual" class="form-select" required>
-                  <option value="">Select qualification</option>
-                  <option>Bachelor's Degree (BSc / BA)</option>
-                  <option>Master's Degree (MSc / MA)</option>
-                  <option>PhD / Doctorate</option>
-                  <option>PGCE (Teaching Qualification)</option>
-                  <option>HND / HNC</option>
-                  <option>A-Levels</option>
-                  <option>Other</option>
-                </select>
-              </div>
-              <div class="col-sm-6">
-                <label class="form-label">Field of Study *</label>
-                <input id="t-field" type="text" class="form-control" placeholder="e.g. Mathematics, Physics" required />
-              </div>
-              <div class="col-sm-6">
-                <label class="form-label">University / Institution</label>
-                <input id="t-institution" type="text" class="form-control" placeholder="e.g. University of Manchester" />
-              </div>
-              <div class="col-sm-6">
-                <label class="form-label">Years of Teaching Experience *</label>
-                <select id="t-exp" class="form-select" required>
-                  <option value="">Select experience</option>
-                  <option>Less than 1 year</option>
-                  <option>1–2 years</option>
-                  <option>3–5 years</option>
-                  <option>6–10 years</option>
-                  <option>10+ years</option>
-                </select>
-              </div>
-              <div class="col-12">
-                <label class="form-label">Additional Qualifications / Certifications</label>
-                <textarea id="t-certs" class="form-control" rows="2" placeholder="Any teaching certifications, DBS checks, professional memberships..."></textarea>
-              </div>
-            </div>
-          </div>
-
-          <!-- Subjects -->
-          <div class="form-section">
-            <div class="form-section-title"><i class="bi bi-book me-2"></i>Subjects You Teach</div>
-            <label class="form-label mb-2">Select all subjects you can teach *</label>
-            <div class="subject-checkbox-group">
-              <label class="subject-check-label"><input type="checkbox" value="mathematics" />Mathematics</label>
-              <label class="subject-check-label"><input type="checkbox" value="further-maths" />Further Maths</label>
-              <label class="subject-check-label"><input type="checkbox" value="physics" />Physics</label>
-              <label class="subject-check-label"><input type="checkbox" value="chemistry" />Chemistry</label>
-              <label class="subject-check-label"><input type="checkbox" value="biology" />Biology</label>
-              <label class="subject-check-label"><input type="checkbox" value="science" />Combined Science</label>
-              <label class="subject-check-label"><input type="checkbox" value="english" />English Language</label>
-              <label class="subject-check-label"><input type="checkbox" value="english-lit" />English Literature</label>
-              <label class="subject-check-label"><input type="checkbox" value="history" />History</label>
-              <label class="subject-check-label"><input type="checkbox" value="geography" />Geography</label>
-              <label class="subject-check-label"><input type="checkbox" value="computing" />Computing / IT</label>
-              <label class="subject-check-label"><input type="checkbox" value="french" />French</label>
-              <label class="subject-check-label"><input type="checkbox" value="spanish" />Spanish</label>
-              <label class="subject-check-label"><input type="checkbox" value="german" />German</label>
-              <label class="subject-check-label"><input type="checkbox" value="art" />Art &amp; Design</label>
-              <label class="subject-check-label"><input type="checkbox" value="music" />Music</label>
-              <label class="subject-check-label"><input type="checkbox" value="economics" />Economics</label>
-              <label class="subject-check-label"><input type="checkbox" value="psychology" />Psychology</label>
-            </div>
-            <div class="mt-3">
-              <label class="form-label">Tuition Levels (select all that apply)</label>
-              <div class="subject-checkbox-group">
-                <label class="subject-check-label"><input type="checkbox" value="ks3" />KS3</label>
-                <label class="subject-check-label"><input type="checkbox" value="gcse" />GCSE</label>
-                <label class="subject-check-label"><input type="checkbox" value="alevel" />A-Level</label>
-                <label class="subject-check-label"><input type="checkbox" value="university" />University</label>
-                <label class="subject-check-label"><input type="checkbox" value="adult" />Adult Learning</label>
-              </div>
-            </div>
-          </div>
-
-          <!-- Your Rates -->
-          <div class="form-section">
-            <div class="form-section-title"><i class="bi bi-currency-pound me-2"></i>Your Hourly Rates</div>
-            <p class="text-muted small mb-3">Set your rate (£/hr) for each academic level. Leave blank or enter 0 to show "Rate on request" for that level.</p>
-            <div class="row g-3">
-              <div class="col-sm-6 col-md-4">
-                <label class="form-label">KS3 (Year 7–9)</label>
-                <div class="input-group">
-                  <span class="input-group-text">£</span>
-                  <input id="t-rate-ks3" type="number" min="0" max="999" step="1" class="form-control" placeholder="e.g. 25" />
-                  <span class="input-group-text">/hr</span>
-                </div>
-              </div>
-              <div class="col-sm-6 col-md-4">
-                <label class="form-label">GCSE (Year 10–11)</label>
-                <div class="input-group">
-                  <span class="input-group-text">£</span>
-                  <input id="t-rate-gcse" type="number" min="0" max="999" step="1" class="form-control" placeholder="e.g. 30" />
-                  <span class="input-group-text">/hr</span>
-                </div>
-              </div>
-              <div class="col-sm-6 col-md-4">
-                <label class="form-label">A-Level (Year 12–13)</label>
-                <div class="input-group">
-                  <span class="input-group-text">£</span>
-                  <input id="t-rate-alevel" type="number" min="0" max="999" step="1" class="form-control" placeholder="e.g. 40" />
-                  <span class="input-group-text">/hr</span>
-                </div>
-              </div>
-              <div class="col-sm-6 col-md-4">
-                <label class="form-label">University</label>
-                <div class="input-group">
-                  <span class="input-group-text">£</span>
-                  <input id="t-rate-uni" type="number" min="0" max="999" step="1" class="form-control" placeholder="e.g. 50" />
-                  <span class="input-group-text">/hr</span>
-                </div>
-              </div>
-              <div class="col-sm-6 col-md-4">
-                <label class="form-label">Adult Learning</label>
-                <div class="input-group">
-                  <span class="input-group-text">£</span>
-                  <input id="t-rate-adult" type="number" min="0" max="999" step="1" class="form-control" placeholder="e.g. 30" />
-                  <span class="input-group-text">/hr</span>
+            <!-- 1. Personal Details -->
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#sec-personal" aria-expanded="true">
+                  <i class="bi bi-person me-2"></i>Personal Details
+                </button>
+              </h2>
+              <div id="sec-personal" class="accordion-collapse collapse show">
+                <div class="accordion-body">
+                  <div class="row g-3">
+                    <div class="col-sm-6">
+                      <label class="form-label">First Name *</label>
+                      <input id="t-fname" type="text" class="form-control" placeholder="e.g. Sarah" required />
+                    </div>
+                    <div class="col-sm-6">
+                      <label class="form-label">Last Name *</label>
+                      <input id="t-lname" type="text" class="form-control" placeholder="e.g. Mitchell" required />
+                    </div>
+                    <div class="col-sm-6">
+                      <label class="form-label">Email Address *</label>
+                      <input id="t-email" type="email" class="form-control" placeholder="you@example.com" required />
+                    </div>
+                    <div class="col-sm-6">
+                      <label class="form-label">Phone Number *</label>
+                      <input id="t-phone" type="tel" class="form-control" placeholder="e.g. 07700 900000" required />
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label">Short Bio / Introduction *</label>
+                      <textarea id="t-bio" class="form-control" rows="3" placeholder="Tell us a bit about yourself and your teaching approach..." required></textarea>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- DBS Update Service -->
-          <div class="form-section">
-            <div class="form-section-title"><i class="bi bi-shield-check me-2"></i>DBS Update Service</div>
-            <div class="alert alert-info d-flex align-items-start gap-2 mb-3 py-2 px-3">
-              <i class="bi bi-info-circle-fill text-primary mt-1 flex-shrink-0"></i>
-              <small>You must be registered with the <strong>Government's DBS Update Service</strong> to apply. Enter your certificate details below — we use these to verify your DBS status online. <a href="https://www.gov.uk/dbs-update-service" target="_blank" rel="noopener">Learn more <i class="bi bi-box-arrow-up-right"></i></a></small>
+            <!-- 2. Qualifications -->
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sec-quals" aria-expanded="false">
+                  <i class="bi bi-award me-2"></i>Qualifications &amp; Experience
+                </button>
+              </h2>
+              <div id="sec-quals" class="accordion-collapse collapse">
+                <div class="accordion-body">
+                  <div class="row g-3">
+                    <div class="col-sm-6">
+                      <label class="form-label">Highest Qualification *</label>
+                      <select id="t-qual" class="form-select" required>
+                        <option value="">Select qualification</option>
+                        <option>Bachelor's Degree (BSc / BA)</option>
+                        <option>Master's Degree (MSc / MA)</option>
+                        <option>PhD / Doctorate</option>
+                        <option>PGCE (Teaching Qualification)</option>
+                        <option>HND / HNC</option>
+                        <option>A-Levels</option>
+                        <option>Other</option>
+                      </select>
+                    </div>
+                    <div class="col-sm-6">
+                      <label class="form-label">Field of Study *</label>
+                      <input id="t-field" type="text" class="form-control" placeholder="e.g. Mathematics, Physics" required />
+                    </div>
+                    <div class="col-sm-6">
+                      <label class="form-label">University / Institution</label>
+                      <input id="t-institution" type="text" class="form-control" placeholder="e.g. University of Manchester" />
+                    </div>
+                    <div class="col-sm-6">
+                      <label class="form-label">Years of Teaching Experience *</label>
+                      <select id="t-exp" class="form-select" required>
+                        <option value="">Select experience</option>
+                        <option>Less than 1 year</option>
+                        <option>1–2 years</option>
+                        <option>3–5 years</option>
+                        <option>6–10 years</option>
+                        <option>10+ years</option>
+                      </select>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label">Additional Qualifications / Certifications</label>
+                      <textarea id="t-certs" class="form-control" rows="2" placeholder="Any teaching certifications, professional memberships..."></textarea>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="row g-3">
-              <div class="col-sm-6">
-                <label class="form-label">DBS Certificate Number *</label>
-                <input id="t-dbs-cert" type="text" class="form-control" placeholder="e.g. 001234567890" maxlength="20" required />
-                <div class="form-text">The 12-digit number printed on your DBS certificate.</div>
-              </div>
-              <div class="col-sm-6">
-                <label class="form-label">Update Service Subscription ID *</label>
-                <input id="t-dbs-service-id" type="text" class="form-control" placeholder="e.g. 1234567890" maxlength="20" required />
-                <div class="form-text">Your reference number from the DBS Update Service.</div>
-              </div>
-              <div class="col-sm-6">
-                <label class="form-label">DBS Certificate Issue Date *</label>
-                <input id="t-dbs-issued" type="date" class="form-control" required />
-                <div class="form-text">The date printed on your DBS certificate.</div>
-              </div>
-            </div>
-          </div>
 
-          <!-- Availability -->
-          <div class="form-section">
-            <div class="form-section-title"><i class="bi bi-calendar3 me-2"></i>Availability</div>
-            <label class="form-label mb-2">Available Days *</label>
-            <div class="availability-grid mb-4">
-              <button type="button" class="day-btn">Monday</button>
-              <button type="button" class="day-btn">Tuesday</button>
-              <button type="button" class="day-btn">Wednesday</button>
-              <button type="button" class="day-btn">Thursday</button>
-              <button type="button" class="day-btn">Friday</button>
-              <button type="button" class="day-btn">Saturday</button>
-              <button type="button" class="day-btn">Sunday</button>
+            <!-- 3. Subjects -->
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sec-subjects" aria-expanded="false">
+                  <i class="bi bi-book me-2"></i>Subjects You Teach
+                </button>
+              </h2>
+              <div id="sec-subjects" class="accordion-collapse collapse">
+                <div class="accordion-body">
+                  <label class="form-label mb-2">Select all subjects you can teach *</label>
+                  <div class="subject-checkbox-group">
+                    <label class="subject-check-label"><input type="checkbox" value="mathematics" />Mathematics</label>
+                    <label class="subject-check-label"><input type="checkbox" value="further-maths" />Further Maths</label>
+                    <label class="subject-check-label"><input type="checkbox" value="physics" />Physics</label>
+                    <label class="subject-check-label"><input type="checkbox" value="chemistry" />Chemistry</label>
+                    <label class="subject-check-label"><input type="checkbox" value="biology" />Biology</label>
+                    <label class="subject-check-label"><input type="checkbox" value="science" />Combined Science</label>
+                    <label class="subject-check-label"><input type="checkbox" value="english" />English Language</label>
+                    <label class="subject-check-label"><input type="checkbox" value="english-lit" />English Literature</label>
+                    <label class="subject-check-label"><input type="checkbox" value="history" />History</label>
+                    <label class="subject-check-label"><input type="checkbox" value="geography" />Geography</label>
+                    <label class="subject-check-label"><input type="checkbox" value="computing" />Computing / IT</label>
+                    <label class="subject-check-label"><input type="checkbox" value="french" />French</label>
+                    <label class="subject-check-label"><input type="checkbox" value="spanish" />Spanish</label>
+                    <label class="subject-check-label"><input type="checkbox" value="german" />German</label>
+                    <label class="subject-check-label"><input type="checkbox" value="art" />Art &amp; Design</label>
+                    <label class="subject-check-label"><input type="checkbox" value="music" />Music</label>
+                    <label class="subject-check-label"><input type="checkbox" value="economics" />Economics</label>
+                    <label class="subject-check-label"><input type="checkbox" value="psychology" />Psychology</label>
+                  </div>
+                </div>
+              </div>
             </div>
-            <label class="form-label mb-2">Available Time Slots *</label>
-            <div class="availability-grid mb-3">
-              <button type="button" class="time-btn">8am – 10am</button>
-              <button type="button" class="time-btn">10am – 12pm</button>
-              <button type="button" class="time-btn">12pm – 2pm</button>
-              <button type="button" class="time-btn">2pm – 4pm</button>
-              <button type="button" class="time-btn">4pm – 6pm</button>
-              <button type="button" class="time-btn">6pm – 8pm</button>
-              <button type="button" class="time-btn">8pm – 10pm</button>
-            </div>
-            <div class="alert alert-warning d-flex align-items-center gap-2 mt-2">
-              <i class="bi bi-calendar-check flex-shrink-0"></i>
-              <small id="availability-summary">No availability selected yet.</small>
-            </div>
-          </div>
 
-          <!-- Account Setup -->
-          <div class="form-section">
-            <div class="form-section-title"><i class="bi bi-lock me-2"></i>Account Setup</div>
-            <div class="row g-3">
-              <div class="col-sm-6">
-                <label class="form-label">Password *</label>
-                <input id="t-pwd" type="password" class="form-control" placeholder="Choose a strong password" required />
-              </div>
-              <div class="col-sm-6">
-                <label class="form-label">Confirm Password *</label>
-                <input id="t-confirm" type="password" class="form-control" placeholder="Repeat your password" required />
+            <!-- 4. Rates (levels + rates combined) -->
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sec-rates" aria-expanded="false">
+                  <i class="bi bi-currency-pound me-2"></i>Levels &amp; Hourly Rates
+                </button>
+              </h2>
+              <div id="sec-rates" class="accordion-collapse collapse">
+                <div class="accordion-body">
+                  <p class="text-muted small mb-3">Tick each level you teach, then enter your hourly rate. Unticked levels won't appear on your profile.</p>
+
+                  <div class="rate-row">
+                    <div class="form-check">
+                      <input class="form-check-input level-check" type="checkbox" id="chk-ks3" data-wrap="wrap-ks3" />
+                      <label class="form-check-label" for="chk-ks3"><strong>KS3</strong> <span class="text-muted">(Year 7–9)</span></label>
+                    </div>
+                    <div class="input-group rate-wrap" id="wrap-ks3">
+                      <span class="input-group-text">£</span>
+                      <input id="t-rate-ks3" type="number" min="1" max="999" step="1" class="form-control" placeholder="e.g. 25" />
+                      <span class="input-group-text">/hr</span>
+                    </div>
+                  </div>
+
+                  <div class="rate-row">
+                    <div class="form-check">
+                      <input class="form-check-input level-check" type="checkbox" id="chk-gcse" data-wrap="wrap-gcse" />
+                      <label class="form-check-label" for="chk-gcse"><strong>GCSE</strong> <span class="text-muted">(Year 10–11)</span></label>
+                    </div>
+                    <div class="input-group rate-wrap" id="wrap-gcse">
+                      <span class="input-group-text">£</span>
+                      <input id="t-rate-gcse" type="number" min="1" max="999" step="1" class="form-control" placeholder="e.g. 30" />
+                      <span class="input-group-text">/hr</span>
+                    </div>
+                  </div>
+
+                  <div class="rate-row">
+                    <div class="form-check">
+                      <input class="form-check-input level-check" type="checkbox" id="chk-alevel" data-wrap="wrap-alevel" />
+                      <label class="form-check-label" for="chk-alevel"><strong>A-Level</strong> <span class="text-muted">(Year 12–13)</span></label>
+                    </div>
+                    <div class="input-group rate-wrap" id="wrap-alevel">
+                      <span class="input-group-text">£</span>
+                      <input id="t-rate-alevel" type="number" min="1" max="999" step="1" class="form-control" placeholder="e.g. 40" />
+                      <span class="input-group-text">/hr</span>
+                    </div>
+                  </div>
+
+                  <div class="rate-row">
+                    <div class="form-check">
+                      <input class="form-check-input level-check" type="checkbox" id="chk-uni" data-wrap="wrap-uni" />
+                      <label class="form-check-label" for="chk-uni"><strong>University</strong></label>
+                    </div>
+                    <div class="input-group rate-wrap" id="wrap-uni">
+                      <span class="input-group-text">£</span>
+                      <input id="t-rate-uni" type="number" min="1" max="999" step="1" class="form-control" placeholder="e.g. 50" />
+                      <span class="input-group-text">/hr</span>
+                    </div>
+                  </div>
+
+                  <div class="rate-row">
+                    <div class="form-check">
+                      <input class="form-check-input level-check" type="checkbox" id="chk-adult" data-wrap="wrap-adult" />
+                      <label class="form-check-label" for="chk-adult"><strong>Adult Learning</strong></label>
+                    </div>
+                    <div class="input-group rate-wrap" id="wrap-adult">
+                      <span class="input-group-text">£</span>
+                      <input id="t-rate-adult" type="number" min="1" max="999" step="1" class="form-control" placeholder="e.g. 30" />
+                      <span class="input-group-text">/hr</span>
+                    </div>
+                  </div>
+
+                </div>
               </div>
             </div>
-          </div>
+
+            <!-- 5. DBS -->
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sec-dbs" aria-expanded="false">
+                  <i class="bi bi-shield-check me-2"></i>DBS Update Service
+                </button>
+              </h2>
+              <div id="sec-dbs" class="accordion-collapse collapse">
+                <div class="accordion-body">
+                  <div class="alert alert-info d-flex align-items-start gap-2 mb-3 py-2 px-3">
+                    <i class="bi bi-info-circle-fill text-primary mt-1 flex-shrink-0"></i>
+                    <small>You must be registered with the <strong>Government's DBS Update Service</strong> to apply. Enter your certificate details below — we use these to verify your DBS status online. <a href="https://www.gov.uk/dbs-update-service" target="_blank" rel="noopener">Learn more <i class="bi bi-box-arrow-up-right"></i></a></small>
+                  </div>
+                  <div class="row g-3">
+                    <div class="col-sm-6">
+                      <label class="form-label">DBS Certificate Number *</label>
+                      <input id="t-dbs-cert" type="text" class="form-control" placeholder="e.g. 001234567890" maxlength="20" required />
+                      <div class="form-text">The 12-digit number printed on your DBS certificate.</div>
+                    </div>
+                    <div class="col-sm-6">
+                      <label class="form-label">Update Service Subscription ID *</label>
+                      <input id="t-dbs-service-id" type="text" class="form-control" placeholder="e.g. 1234567890" maxlength="20" required />
+                      <div class="form-text">Your reference number from the DBS Update Service.</div>
+                    </div>
+                    <div class="col-sm-6">
+                      <label class="form-label">DBS Certificate Issue Date *</label>
+                      <input id="t-dbs-issued" type="date" class="form-control" required />
+                      <div class="form-text">The date printed on your DBS certificate.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 6. Availability -->
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sec-avail" aria-expanded="false">
+                  <i class="bi bi-calendar3 me-2"></i>Availability
+                </button>
+              </h2>
+              <div id="sec-avail" class="accordion-collapse collapse">
+                <div class="accordion-body">
+                  <label class="form-label mb-2">Available Days *</label>
+                  <div class="availability-grid mb-4">
+                    <button type="button" class="day-btn">Monday</button>
+                    <button type="button" class="day-btn">Tuesday</button>
+                    <button type="button" class="day-btn">Wednesday</button>
+                    <button type="button" class="day-btn">Thursday</button>
+                    <button type="button" class="day-btn">Friday</button>
+                    <button type="button" class="day-btn">Saturday</button>
+                    <button type="button" class="day-btn">Sunday</button>
+                  </div>
+                  <label class="form-label mb-2">Available Time Slots *</label>
+                  <div class="availability-grid mb-3">
+                    <button type="button" class="time-btn">8am – 10am</button>
+                    <button type="button" class="time-btn">10am – 12pm</button>
+                    <button type="button" class="time-btn">12pm – 2pm</button>
+                    <button type="button" class="time-btn">2pm – 4pm</button>
+                    <button type="button" class="time-btn">4pm – 6pm</button>
+                    <button type="button" class="time-btn">6pm – 8pm</button>
+                    <button type="button" class="time-btn">8pm – 10pm</button>
+                  </div>
+                  <div class="alert alert-warning d-flex align-items-center gap-2 mt-2">
+                    <i class="bi bi-calendar-check flex-shrink-0"></i>
+                    <small id="availability-summary">No availability selected yet.</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 7. Account Setup -->
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sec-account" aria-expanded="false">
+                  <i class="bi bi-lock me-2"></i>Account Setup
+                </button>
+              </h2>
+              <div id="sec-account" class="accordion-collapse collapse">
+                <div class="accordion-body">
+                  <div class="row g-3">
+                    <div class="col-sm-6">
+                      <label class="form-label">Password *</label>
+                      <input id="t-pwd" type="password" class="form-control" placeholder="Choose a strong password" required />
+                    </div>
+                    <div class="col-sm-6">
+                      <label class="form-label">Confirm Password *</label>
+                      <input id="t-confirm" type="password" class="form-control" placeholder="Repeat your password" required />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /accordion -->
 
           <!-- Terms -->
-          <div class="mb-4">
+          <div class="mb-4 mt-2">
             <div class="form-check">
               <input class="form-check-input" type="checkbox" id="terms" required />
               <label class="form-check-label small" for="terms">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>. I confirm that the information I have provided is accurate and truthful.</label>
             </div>
           </div>
 
-          <!-- Error / Success Messages -->
+          <!-- Error / Success -->
           <div class="alert alert-danger d-none form-error mb-3"></div>
           <div class="alert alert-success d-none form-success">
             <i class="bi bi-check-circle-fill me-2"></i><strong>Application submitted!</strong> Our admin team will review your details and contact you within 3–5 working days. You can check your application status on your <a href="tutor-dashboard.html">Tutor Dashboard</a>.
@@ -313,9 +411,31 @@
   const errDiv = form.querySelector(".form-error");
   const okDiv  = form.querySelector(".form-success");
 
+  // Level checkbox toggles rate input visibility
+  document.querySelectorAll('.level-check').forEach(chk => {
+    chk.addEventListener('change', function () {
+      const wrap = document.getElementById(this.dataset.wrap);
+      if (wrap) wrap.classList.toggle('visible', this.checked);
+    });
+  });
+
+  function expandSectionOf(el) {
+    const collapse = el.closest('.accordion-collapse');
+    if (collapse && !collapse.classList.contains('show')) {
+      bootstrap.Collapse.getOrCreateInstance(collapse).show();
+    }
+  }
+
   form.addEventListener("submit", async function (e) {
     e.preventDefault();
-    if (!form.checkValidity()) { form.reportValidity(); return; }
+
+    // Expand the section containing the first invalid field before reporting
+    const firstInvalid = form.querySelector(':invalid:not(form)');
+    if (firstInvalid) {
+      expandSectionOf(firstInvalid);
+      form.reportValidity();
+      return;
+    }
 
     const fname   = document.getElementById("t-fname").value.trim();
     const lname   = document.getElementById("t-lname").value.trim();
@@ -330,12 +450,18 @@
     const pwd     = document.getElementById("t-pwd").value;
     const confirm = document.getElementById("t-confirm").value;
 
-    // Rates — store as integer pence-equivalent (whole £); 0 = "rate on request"
-    const rateKS3      = parseInt(document.getElementById("t-rate-ks3").value)    || 0;
-    const rateGCSE     = parseInt(document.getElementById("t-rate-gcse").value)   || 0;
-    const rateALevel   = parseInt(document.getElementById("t-rate-alevel").value) || 0;
-    const rateUniversity = parseInt(document.getElementById("t-rate-uni").value)  || 0;
-    const rateAdult    = parseInt(document.getElementById("t-rate-adult").value)  || 0;
+    // Rates — only for checked levels
+    const rateKS3        = document.getElementById("chk-ks3").checked    ? (parseInt(document.getElementById("t-rate-ks3").value)    || 0) : 0;
+    const rateGCSE       = document.getElementById("chk-gcse").checked   ? (parseInt(document.getElementById("t-rate-gcse").value)   || 0) : 0;
+    const rateALevel     = document.getElementById("chk-alevel").checked ? (parseInt(document.getElementById("t-rate-alevel").value) || 0) : 0;
+    const rateUniversity = document.getElementById("chk-uni").checked    ? (parseInt(document.getElementById("t-rate-uni").value)    || 0) : 0;
+    const rateAdult      = document.getElementById("chk-adult").checked  ? (parseInt(document.getElementById("t-rate-adult").value)  || 0) : 0;
+
+    // Levels derived from checked checkboxes
+    const LEVEL_MAP = { "chk-ks3": "KS3", "chk-gcse": "GCSE", "chk-alevel": "A-Level", "chk-uni": "University", "chk-adult": "Adult Learning" };
+    const levels = Object.entries(LEVEL_MAP)
+      .filter(([id]) => document.getElementById(id).checked)
+      .map(([, label]) => label).join(", ");
 
     const dbsCertificateNumber = document.getElementById("t-dbs-cert").value.trim();
     const dbsUpdateServiceId   = document.getElementById("t-dbs-service-id").value.trim();
@@ -344,6 +470,7 @@
     if (!dbsCertificateNumber || !dbsUpdateServiceId || !dbsIssuedDate) {
       errDiv.textContent = "DBS certificate number, Update Service ID, and issue date are all required.";
       errDiv.classList.remove("d-none");
+      expandSectionOf(document.getElementById("t-dbs-cert"));
       document.getElementById("t-dbs-cert").focus();
       return;
     }
@@ -351,6 +478,7 @@
     if (pwd !== confirm) {
       errDiv.textContent = "Passwords do not match.";
       errDiv.classList.remove("d-none");
+      expandSectionOf(document.getElementById("t-pwd"));
       return;
     }
 
@@ -360,26 +488,21 @@
 
     try {
       const credential = await createUserWithEmailAndPassword(auth, email, pwd);
-
-      // Tag account as tutor so nav-auth.js can route correctly
       await updateProfile(credential.user, { displayName: `tutor:${fname}` });
 
       const subjects = [...form.querySelectorAll('.subject-check-label input:checked')]
                          .map(cb => cb.value).join(", ");
-      const days     = [...form.querySelectorAll('.day-btn.active')]
-                         .map(b => b.textContent.trim()).join(", ");
-      const times    = [...form.querySelectorAll('.time-btn.active')]
-                         .map(b => b.textContent.trim()).join(", ");
+      const days  = [...form.querySelectorAll('.day-btn.active')].map(b => b.textContent.trim()).join(", ");
+      const times = [...form.querySelectorAll('.time-btn.active')].map(b => b.textContent.trim()).join(", ");
 
       const appData = {
         name: `${fname} ${lname}`,
-        email, phone, bio, subjects,
+        email, phone, bio, subjects, levels,
         qualification: qual,
         field, institution: inst,
         experience: exp,
         certifications: certs,
         availability: [days && `Days: ${days}`, times && `Times: ${times}`].filter(Boolean).join(" | "),
-        // Hourly rates per level (0 = rate on request)
         rateKS3, rateGCSE, rateALevel, rateUniversity, rateAdult,
         dbsCertificateNumber, dbsUpdateServiceId, dbsIssuedDate,
         dbsVerificationStatus: 'Unverified',
@@ -388,7 +511,6 @@
         submittedAt: new Date().toISOString()
       };
 
-      // Save to Firestore (shown in admin portal) and Sheets (backup)
       await saveTutorApplication(credential.user.uid, appData);
       await saveToSheets({ type: "tutor", ...appData });
 
