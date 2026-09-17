@@ -41,6 +41,7 @@
             <div>
               <h5 class="fw-700 mb-1" id="req-tutor-name">Selected Tutor</h5>
               <div class="small text-muted">Choose a tutor from <a href="browse-tutors.html">Browse Tutors</a> to pre-fill this form.</div>
+              <div class="small mt-1 fw-600 text-primary d-none" id="req-rate-display"></div>
             </div>
           </div>
         </div>
@@ -90,13 +91,13 @@
               </div>
               <div class="col-sm-6">
                 <label class="form-label">Tuition Level *</label>
-                <select class="form-select" required>
+                <select class="form-select" id="req-level" required>
                   <option value="">Select level</option>
-                  <option>KS3</option>
-                  <option>GCSE</option>
-                  <option>A-Level</option>
-                  <option>University</option>
-                  <option>Adult / Other</option>
+                  <option value="KS3">KS3 (Year 7–9)</option>
+                  <option value="GCSE">GCSE (Year 10–11)</option>
+                  <option value="A-Level">A-Level (Year 12–13)</option>
+                  <option value="University">University</option>
+                  <option value="Adult / Other">Adult / Other</option>
                 </select>
               </div>
               <div class="col-sm-6">
@@ -196,6 +197,34 @@
   const tutorId  = params.get("tutorid");
   let   tutorDoc = null;
 
+  // Maps level option values to tutor rate fields
+  const LEVEL_RATE_MAP = {
+    'KS3':           'rateKS3',
+    'GCSE':          'rateGCSE',
+    'A-Level':       'rateALevel',
+    'University':    'rateUniversity',
+    'Adult / Other': 'rateAdult'
+  };
+
+  function updateRateDisplay() {
+    if (!tutorDoc) return;
+    const levelSel = document.getElementById("req-level");
+    const rateDiv  = document.getElementById("req-rate-display");
+    const field    = LEVEL_RATE_MAP[levelSel.value];
+    const rate     = field ? parseInt(tutorDoc[field]) || 0 : 0;
+    if (levelSel.value && rate > 0) {
+      rateDiv.textContent = `£${rate}/hr for ${levelSel.value}`;
+      rateDiv.classList.remove("d-none");
+    } else if (levelSel.value) {
+      rateDiv.textContent = "Rate on request for this level";
+      rateDiv.classList.remove("d-none");
+    } else {
+      rateDiv.classList.add("d-none");
+    }
+  }
+
+  document.getElementById("req-level").addEventListener("change", updateRateDisplay);
+
   if (tutorId) {
     getApprovedTutors().then(tutors => {
       tutorDoc = tutors.find(t => String(t.id) === String(tutorId)) || null;
@@ -208,6 +237,7 @@
           subSelect.innerHTML = '<option value="">Select subject</option>' +
             subjects.map(s => `<option>${s}</option>`).join("");
         }
+        updateRateDisplay();
       }
     }).catch(() => {});
   }

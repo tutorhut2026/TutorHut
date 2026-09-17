@@ -192,6 +192,22 @@
       const days     = avail.match(/Days:\s*([^|]+)/)?.[1]?.trim().split(",").slice(0, 3)
                          .map(d => `<span class="badge-day">${d.trim().slice(0,3)}</span>`).join(" ") || "";
 
+      // Compute lowest non-zero rate for "from £X/hr" display
+      const rateValues = [
+        parseInt(tutor.rateKS3) || 0, parseInt(tutor.rateGCSE) || 0,
+        parseInt(tutor.rateALevel) || 0, parseInt(tutor.rateUniversity) || 0,
+        parseInt(tutor.rateAdult) || 0
+      ].filter(r => r > 0);
+      const rateLabel = rateValues.length
+        ? `<span class="fw-600 text-primary">from £${Math.min(...rateValues)}/hr</span>`
+        : `<span class="text-muted">Rate on request</span>`;
+
+      // Badges
+      const verifiedBadge = (tutor.verified === "true" || tutor.verified === true)
+        ? '<span class="badge bg-success" style="font-size:.7rem"><i class="bi bi-patch-check-fill me-1"></i>Verified</span>' : "";
+      const dbsBadge = tutor.dbsVerificationStatus === "Verified"
+        ? '<span class="badge bg-info text-dark" style="font-size:.7rem"><i class="bi bi-shield-fill-check me-1"></i>DBS Checked</span>' : "";
+
       grid.insertAdjacentHTML("beforeend", `
         <div class="col-md-6 col-lg-4 tutor-card-item"
              data-subjects="${(tutor.subjects||"").toLowerCase()}"
@@ -203,9 +219,10 @@
                 <div>
                   <div class="d-flex align-items-center gap-2 flex-wrap">
                     <h5 class="mb-0 fw-700">${tutor.name || "Tutor"}</h5>
-                    ${(tutor.verified === "true" || tutor.verified === true) ? '<span class="badge bg-success" style="font-size:.7rem"><i class="bi bi-patch-check-fill me-1"></i>Verified</span>' : ""}
+                    ${verifiedBadge}${dbsBadge}
                   </div>
                   <div class="small text-muted">${tutor.qualification || ""}${tutor.qualification && tutor.experience ? " · " : ""}${tutor.experience || ""}</div>
+                  <div class="small mt-1">${rateLabel}</div>
                 </div>
               </div>
               <p class="small text-muted mb-3">${(tutor.bio || "").slice(0, 120)}${(tutor.bio||"").length > 120 ? "…" : ""}</p>
@@ -213,6 +230,7 @@
               <div class="d-flex flex-wrap gap-1">${days}</div>
             </div>
             <div class="card-footer bg-transparent border-top p-3 d-flex gap-2">
+              <a href="tutor-profile.html?id=${tutor.id}" class="btn btn-outline-primary btn-sm">View Profile</a>
               <a href="tuition-request.html?tutorid=${tutor.id}" class="btn btn-primary btn-sm flex-grow-1">Request Session</a>
             </div>
           </div>

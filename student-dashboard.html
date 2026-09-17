@@ -59,8 +59,26 @@
 <script type="module">
   import {
     auth, onAuthStateChanged, signOut,
-    getStudentRequests, getApprovedTutors
+    getStudentRequests, getApprovedTutors, initiatePayment
   } from "./js/firebase.js";
+
+  // Handle Stripe redirect back to dashboard
+  (function() {
+    const sp = new URLSearchParams(window.location.search);
+    if (sp.get("payment") === "success") {
+      const banner = document.createElement("div");
+      banner.className = "alert alert-success alert-dismissible fade show m-3";
+      banner.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i><strong>Payment received!</strong> Tutor contact details are now available below. <button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+      document.getElementById("dashboard-content").prepend(banner);
+      history.replaceState({}, "", window.location.pathname);
+    } else if (sp.get("payment") === "cancelled") {
+      const banner = document.createElement("div");
+      banner.className = "alert alert-warning alert-dismissible fade show m-3";
+      banner.innerHTML = '<i class="bi bi-x-circle me-2"></i>Payment was cancelled. You can try again from your requests below. <button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+      document.getElementById("dashboard-content").prepend(banner);
+      history.replaceState({}, "", window.location.pathname);
+    }
+  })();
 
   onAuthStateChanged(auth, async (user) => {
     const gate = document.getElementById("auth-gate");
@@ -152,6 +170,7 @@
                 <th>Level</th>
                 <th>Submitted</th>
                 <th>Status</th>
+                <th>Payment</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -171,7 +190,7 @@
     const tbody = document.getElementById("requests-tbody");
 
     if (!requests.length) {
-      tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-5">
+      tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-5">
         <i class="bi bi-inbox fs-1 d-block mb-2 opacity-25"></i>
         No requests yet. <a href="browse-tutors.html">Browse tutors</a> to make your first booking.
       </td></tr>`;
@@ -185,10 +204,23 @@
           rejected: '<span class="badge bg-danger">Rejected</span>'
         }[req.status] || '<span class="badge bg-secondary">Unknown</span>';
 
+        const ps = String(req.paymentStatus || "").toLowerCase();
+        const paymentBadge = ps === "released" ? '<span class="badge bg-success">Released</span>'
+          : ps === "paid"    ? '<span class="badge bg-info text-dark">Paid</span>'
+          : req.status === "approved" ? '<span class="badge bg-warning text-dark">Unpaid</span>'
+          : '<span class="text-muted small">—</span>';
+
+        const contactAvailable = req.status === "approved" && (ps === "paid" || ps === "released");
+        const needsPayment     = req.status === "approved" && !contactAvailable;
+
         let actions = "";
-        if (req.status === "approved") {
+        if (contactAvailable) {
           actions = `<button class="btn btn-success btn-sm" onclick="showContact('${req.tutorId}')">
             <i class="bi bi-person-lines-fill me-1"></i>Tutor Contact
+          </button>`;
+        } else if (needsPayment) {
+          actions = `<button class="btn btn-primary btn-sm" id="pay-btn-${req.id}" onclick="payNow('${req.id}')">
+            <i class="bi bi-credit-card me-1"></i>Pay Introduction Fee
           </button>`;
         } else if (req.status === "pending") {
           actions = `<span class="text-muted small">Awaiting review</span>`;
@@ -204,6 +236,7 @@
             <td class="small">${req.level || "—"}</td>
             <td class="small">${date}</td>
             <td>${statusBadge}</td>
+            <td>${paymentBadge}</td>
             <td>${actions}</td>
           </tr>`);
       });
@@ -212,6 +245,23 @@
     // Expose tutorMap for the contact modal
     window._tutorMap = tutorMap;
   });
+
+  window.payNow = async function(requestId) {
+    const btn = document.getElementById("pay-btn-" + requestId);
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Redirecting…'; }
+    try {
+      const result = await initiatePayment(requestId);
+      if (result.url) {
+        window.location.href = result.url;
+      } else {
+        alert("Payment could not be started: " + (result.error || "Unknown error"));
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-credit-card me-1"></i>Pay Introduction Fee'; }
+      }
+    } catch (err) {
+      alert("Failed to start payment. Please try again.");
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-credit-card me-1"></i>Pay Introduction Fee'; }
+    }
+  };
 
   window.showContact = function(tutorId) {
     const tutor = window._tutorMap?.[tutorId];

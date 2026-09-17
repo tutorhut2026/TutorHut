@@ -72,16 +72,17 @@ var DRIVE_ROOT_FOLDER_PROP = 'TUTORHUT_DOCUMENTS_ROOT_FOLDER_ID';
 var TUTOR_ID_PATTERN = /^TH\d{9}$/;
 
 // Standard subfolder structure created inside every tutor root folder.
-// archive: true  → an "_archive" child folder is created inside this subfolder.
-// archive: false → flat subfolder with no children (additive or single-use).
+// No "_archive" children are created — the replace workflow trashes the old
+// Drive file directly instead of moving it into an archive subfolder. Any
+// "_archive" folders left over from before this change are not deleted.
 var TUTOR_SUBFOLDER_STRUCTURE = [
-  { name: 'Identity',      archive: true  },
-  { name: 'Right To Work', archive: true  },
-  { name: 'Qualifications',archive: false },
-  { name: 'DBS',           archive: true  },
-  { name: 'References',    archive: false },
-  { name: 'Safeguarding',  archive: true  },
-  { name: 'Additional',    archive: false }
+  'Identity',
+  'Right To Work',
+  'Qualifications',
+  'DBS',
+  'References',
+  'Safeguarding',
+  'Additional'
 ];
 
 
@@ -198,7 +199,7 @@ function driveValidateFolderId(folderId) {
  * Does not create anything.
  *
  * @param  {string} tutorId  TutorHut public ID (e.g. "TH202600001")
- * @return {{ found: boolean, folder: Folder|null }}
+ * @return {{ exists: boolean, folder: Folder|null }}
  * @throws {Error}  If tutorId format is invalid or the root folder is unavailable
  */
 function driveGetTutorFolder(tutorId) {
@@ -303,7 +304,7 @@ function driveTestSetup() {
   // Step 4: Subfolder structure definition must be complete and contain all required names.
   var required = ['Identity', 'Right To Work', 'Qualifications',
                   'DBS', 'References', 'Safeguarding', 'Additional'];
-  var defined  = TUTOR_SUBFOLDER_STRUCTURE.map(function(s) { return s.name; });
+  var defined  = TUTOR_SUBFOLDER_STRUCTURE;
   var missing  = required.filter(function(name) { return defined.indexOf(name) === -1; });
 
   if (missing.length > 0) {
@@ -394,14 +395,9 @@ function _driveCreateTutorFolder(tutorId) {
     Logger.log(tag + ' CREATED root folderId=' + tutorFolder.getId());
 
     // Create all standard subfolders defined in TUTOR_SUBFOLDER_STRUCTURE.
-    TUTOR_SUBFOLDER_STRUCTURE.forEach(function(def) {
-      var sub = tutorFolder.createFolder(def.name);
-      Logger.log(tag + ' CREATED ' + tutorId + '/' + def.name + '/');
-
-      if (def.archive) {
-        sub.createFolder('_archive');
-        Logger.log(tag + ' CREATED ' + tutorId + '/' + def.name + '/_archive/');
-      }
+    TUTOR_SUBFOLDER_STRUCTURE.forEach(function(name) {
+      tutorFolder.createFolder(name);
+      Logger.log(tag + ' CREATED ' + tutorId + '/' + name + '/');
     });
 
     var folderId  = tutorFolder.getId();

@@ -111,26 +111,30 @@ function setCellValue(sh, rowIdx, fieldName, value) {
 }
 
 /**
- * Finds the row where the 'id' column equals rowId, then writes every
+ * Finds the row where keyColumn equals keyValue, then writes every
  * key-value pair in updates to its corresponding column.
  * One sheet read, one row scan, N setValue calls, one flush.
  *
- * @param  {Sheet}   sh      Apps Script Sheet object
- * @param  {string}  rowId   Value to match in the 'id' column
- * @param  {Object}  updates { columnName: newValue, … }
- * @return {boolean}         true = row found and updated, false = not found
+ * Replaces the former updateRowFields() (keyed on 'id') and
+ * _updateDocumentRow() (keyed on 'documentId') with a single generic helper.
+ *
+ * @param  {Sheet}   sh         Apps Script Sheet object
+ * @param  {string}  keyColumn  Column name to match against (e.g. 'id', 'documentId')
+ * @param  {string}  keyValue   Value to search for in keyColumn
+ * @param  {Object}  updates    { columnName: newValue, … }
+ * @return {boolean}            true = row found and updated, false = not found
  */
-function updateRowFields(sh, rowId, updates) {
-  var vals  = sh.getDataRange().getValues();
+function updateSheetRowByKey(sh, keyColumn, keyValue, updates) {
+  var vals   = sh.getDataRange().getValues();
   if (vals.length < 2) return false;
 
-  var hdrs  = vals[0].map(function(h) { return String(h).trim(); });
-  var idCol = hdrs.indexOf('id');
-  if (idCol < 0) return false;
+  var hdrs   = vals[0].map(function(h) { return String(h).trim(); });
+  var keyCol = hdrs.indexOf(keyColumn);
+  if (keyCol < 0) return false;
 
   var rowIdx = -1;
   for (var i = 1; i < vals.length; i++) {
-    if (String(vals[i][idCol]).trim() === String(rowId).trim()) {
+    if (String(vals[i][keyCol]).trim() === String(keyValue).trim()) {
       rowIdx = i + 1;
       break;
     }
@@ -144,7 +148,7 @@ function updateRowFields(sh, rowId, updates) {
       sh.getRange(rowIdx, col + 1).setValue(updates[field]);
       changed = true;
     } else {
-      Logger.log('[updateRowFields] WARNING: column "' + field +
+      Logger.log('[updateSheetRowByKey] WARNING: column "' + field +
                  '" not found in sheet "' + sh.getName() + '" — skipped');
     }
   });
@@ -287,6 +291,7 @@ var VERIFICATION_SCHEMA = {
     label:              'Identity',
     description:        'Passport, national ID, or driving licence',
     driveFolder:        'Identity',
+    filenameSlug:       'Identity',
     required:           true,
     multipleFiles:      false,
     allowedExtensions:  ['pdf', 'jpg', 'jpeg', 'png'],
@@ -298,6 +303,7 @@ var VERIFICATION_SCHEMA = {
     label:              'Right To Work',
     description:        'Visa, work permit, or Biometric Residence Permit',
     driveFolder:        'Right To Work',
+    filenameSlug:       'RightToWork',
     required:           true,
     multipleFiles:      true,
     allowedExtensions:  ['pdf', 'jpg', 'jpeg', 'png'],
@@ -309,6 +315,7 @@ var VERIFICATION_SCHEMA = {
     label:              'Qualifications',
     description:        'Degree certificates and relevant qualifications',
     driveFolder:        'Qualifications',
+    filenameSlug:       'Qualification',
     required:           true,
     multipleFiles:      true,
     allowedExtensions:  ['pdf', 'jpg', 'jpeg', 'png'],
@@ -320,6 +327,7 @@ var VERIFICATION_SCHEMA = {
     label:              'DBS',
     description:        'Enhanced DBS disclosure certificate',
     driveFolder:        'DBS',
+    filenameSlug:       'DBS',
     required:           true,
     multipleFiles:      false,
     allowedExtensions:  ['pdf', 'jpg', 'jpeg', 'png'],
@@ -331,6 +339,7 @@ var VERIFICATION_SCHEMA = {
     label:              'References',
     description:        'Written professional or academic references',
     driveFolder:        'References',
+    filenameSlug:       'Reference',
     required:           true,
     multipleFiles:      true,
     allowedExtensions:  ['pdf', 'jpg', 'jpeg', 'png'],
@@ -342,6 +351,7 @@ var VERIFICATION_SCHEMA = {
     label:              'Safeguarding',
     description:        'Safeguarding training certificate',
     driveFolder:        'Safeguarding',
+    filenameSlug:       'Safeguarding',
     required:           true,
     multipleFiles:      false,
     allowedExtensions:  ['pdf', 'jpg', 'jpeg', 'png'],
@@ -423,7 +433,7 @@ function getVerificationStatus(appId, category) {
 
 /**
  * Transitions a verification category to a new status, enforcing the state machine.
- * Writes via updateRowFields() and logs the transition.
+ * Writes via updateSheetRowByKey() and logs the transition.
  *
  * @param  {string} appId     The application 'id' field value
  * @param  {string} category  One of the VERIFICATION_SCHEMA keys
@@ -431,7 +441,17 @@ function getVerificationStatus(appId, category) {
  * @param  {string} changedBy Identifier of the actor (e.g. admin email or 'system')
  * @return {Object}           { ok, error }
  */
-function setVerificationStatus(appId, category, newStatus, changedBy) {
+/**
+ * @param  {string}      appId
+ * @param  {string}      category
+ * @param  {string}      newStatus
+ * @param  {string}      changedBy
+ * @param  {string|null} [knownCurrentStatus]  When the caller already holds the
+ *   current status (e.g. read from Applications in the same request), pass it here
+ *   to skip the redundant Applications-sheet re-read inside getVerificationStatus().
+ * @return {Object} { ok, error }
+ */
+function setVerificationStatus(appId, category, newStatus, changedBy, knownCurrentStatus) {
   var ts = new Date().toISOString();
 
   if (!isValidVerificationCategory(category)) {
@@ -446,7 +466,11 @@ function setVerificationStatus(appId, category, newStatus, changedBy) {
     return { ok: false, error: statusErr };
   }
 
-  var currentStatus = getVerificationStatus(appId, category);
+  // Use caller-supplied status when valid to avoid an extra Applications read.
+  var currentStatus = (knownCurrentStatus && isValidVerificationStatus(knownCurrentStatus))
+    ? knownCurrentStatus
+    : getVerificationStatus(appId, category);
+
   if (currentStatus === null) {
     var notFoundErr = 'application "' + appId + '" not found';
     Logger.log('[Verification][' + ts + '] setVerificationStatus ERROR ' + notFoundErr);
@@ -467,9 +491,9 @@ function setVerificationStatus(appId, category, newStatus, changedBy) {
   var update = {};
   update[_verificationColumnName(category)] = newStatus;
 
-  var written = updateRowFields(getSheet('Applications'), appId, update);
+  var written = updateSheetRowByKey(getSheet('Applications'), 'id', appId, update);
   if (!written) {
-    var writeErr = 'updateRowFields returned false for appId "' + appId + '"';
+    var writeErr = 'row not found for appId "' + appId + '"';
     Logger.log('[Verification][' + ts + '] setVerificationStatus ERROR ' + writeErr);
     return { ok: false, error: writeErr };
   }
@@ -512,9 +536,9 @@ function resetVerificationStatus(appId, category, resetBy) {
   var update = {};
   update[_verificationColumnName(category)] = VERIFICATION_STATUS_DEFAULT;
 
-  var written = updateRowFields(getSheet('Applications'), appId, update);
+  var written = updateSheetRowByKey(getSheet('Applications'), 'id', appId, update);
   if (!written) {
-    var writeErr = 'updateRowFields returned false for appId "' + appId + '"';
+    var writeErr = 'row not found for appId "' + appId + '"';
     Logger.log('[Verification][' + ts + '] resetVerificationStatus ERROR ' + writeErr);
     return { ok: false, error: writeErr };
   }
@@ -536,20 +560,23 @@ function resetVerificationStatus(appId, category, resetBy) {
 // No other layer reads from or writes to the Documents sheet directly.
 //
 // Document record lifecycle:
-//   Active → Archived  (via archiveDocument or replaceDocument)
-//   Active → Deleted   (via deleteDocumentRecord — soft delete, Drive file untouched)
-//   Archived and Deleted records are never restored or overwritten.
+//   Active → Deleted  (via replaceDocument — old Drive file trashed, old record
+//                       marked Deleted, new record created)
+//   Active → Deleted  (via deleteDocumentRecord — soft delete only, Drive file
+//                       untouched; used for tutor-initiated deletes)
+//   Deleted records are never restored or overwritten.
 //
-// Versioning (multipleFiles = false categories only):
-//   replaceDocument() archives the existing Active record, moves the Drive file
-//   to the category's _archive subfolder (best effort), then creates a new record
-//   with version = previous max version + 1. Version history is never lost.
+// Drive file naming:
+//   Files are stored using the schema filenameSlug convention.
+//   Single-doc:  TH202600001_Identity.pdf  (fixed name; reused on replace)
+//   Multi-doc:   TH202600001_RightToWork_03.pdf  (collision-safe suffix)
+//   Timestamps are not used in Drive filenames.
 //
 // Drive file handling:
 //   createDocumentRecord() — receives already-uploaded Drive metadata from the caller.
 //                            The caller is responsible for the actual file upload.
-//   archiveDocument()      — metadata only. Caller manages Drive if needed.
-//   replaceDocument()      — archives old metadata + best-effort Drive file move.
+//   replaceDocument()      — trashes old Drive file (best effort), marks old record
+//                            Deleted, creates new record via createDocumentRecord().
 //   deleteDocumentRecord() — metadata only. Drive file is left in place.
 //
 // Application relationship:
@@ -620,40 +647,6 @@ function _nextDocumentIdFromRows(rows) {
   return prefix + seqStr;
 }
 
-// Internal: updates a Documents sheet row by its documentId column.
-// Mirrors updateRowFields() but uses 'documentId' as the key instead of 'id'.
-function _updateDocumentRow(documentId, updates) {
-  var sh   = getSheet('Documents');
-  var vals = sh.getDataRange().getValues();
-  if (vals.length < 2) return false;
-
-  var hdrs  = vals[0].map(function(h) { return String(h).trim(); });
-  var idCol = hdrs.indexOf('documentId');
-  if (idCol < 0) return false;
-
-  var rowIdx = -1;
-  for (var i = 1; i < vals.length; i++) {
-    if (String(vals[i][idCol]).trim() === String(documentId).trim()) {
-      rowIdx = i + 1;
-      break;
-    }
-  }
-  if (rowIdx < 0) return false;
-
-  var changed = false;
-  Object.keys(updates).forEach(function(field) {
-    var col = hdrs.indexOf(field);
-    if (col >= 0) {
-      sh.getRange(rowIdx, col + 1).setValue(updates[field]);
-      changed = true;
-    } else {
-      Logger.log('[Document] _updateDocumentRow WARNING: column "' + field + '" not found — skipped');
-    }
-  });
-
-  if (changed) SpreadsheetApp.flush();
-  return true;
-}
 
 /**
  * Creates a new document record in the Documents sheet and transitions the
@@ -733,18 +726,9 @@ function createDocumentRecord(params) {
     var allDocs = sheetToObjects(docSh);
 
     documentId = _nextDocumentIdFromRows(allDocs);
-
-    // Compute version: max version for this tutorId + category (includes Archived, excludes Deleted).
-    var maxVersion = 0;
-    allDocs.forEach(function(doc) {
-      if (String(doc.tutorId  || '').trim() === String(params.tutorId  || '').trim() &&
-          String(doc.category || '').trim() === String(params.category  || '').trim() &&
-          String(doc.status   || '').trim() !== DOCUMENT_STATUS_DELETED) {
-        var v = parseInt(String(doc.version || '0'), 10);
-        if (!isNaN(v) && v > maxVersion) maxVersion = v;
-      }
-    });
-    version = maxVersion + 1;
+    // Version is retained in the schema for backward compatibility but no
+    // longer drives any logic — new records always write '1'.
+    version = 1;
 
     var record = {
       documentId:       documentId,
@@ -760,7 +744,7 @@ function createDocumentRecord(params) {
       mimeType:         String(params.mimeType),
       fileSize:         params.fileSize !== undefined && params.fileSize !== null
                           ? String(params.fileSize) : '',
-      version:          String(version),
+      version:          '1',
       status:           DOCUMENT_STATUS_ACTIVE,
       uploadedAt:       params.uploadedAt || ts,
       uploadedBy:       String(params.uploadedBy)
@@ -787,13 +771,18 @@ function createDocumentRecord(params) {
   }
 
   // ── Phase 2: Verification status transition (outside lock, best effort) ─────
-  // applicationId was resolved before Phase 1 — no cross-sheet lookup needed here.
-  // A blocked transition (e.g. status already Approved) is logged but does not
-  // fail the document record — the record is already committed to the sheet.
+  // applicationId was resolved before Phase 1. knownVerificationStatus (optional)
+  // is forwarded from the caller when it already holds the current status, avoiding
+  // a redundant Applications-sheet read inside setVerificationStatus().
+  // A blocked transition (e.g. already Approved) logs a warning but does not
+  // fail the record — it is already committed to the sheet.
   try {
     if (applicationId) {
-      var vsResult = setVerificationStatus(applicationId, params.category, 'Uploaded',
-                                           params.uploadedBy || 'system');
+      var vsResult = setVerificationStatus(
+        applicationId, params.category, 'Uploaded',
+        params.uploadedBy || 'system',
+        params.knownVerificationStatus || null
+      );
       if (!vsResult.ok) {
         Logger.log('[Document][' + ts + '] WARN verification status not updated for' +
                    ' documentId=' + documentId + ': ' + vsResult.error);
@@ -867,68 +856,34 @@ function getCategoryDocuments(tutorId, category) {
 }
 
 /**
- * Marks a document record as Archived. Metadata only — does not move Drive files.
- * Idempotent: returns { ok: true } if already Archived.
- * For a full replacement workflow (archive + Drive move + new record), use replaceDocument().
- *
- * @param  {string} documentId
- * @param  {string} archivedBy
- * @return {Object} { ok, error }
- */
-function archiveDocument(documentId, archivedBy) {
-  var ts = new Date().toISOString();
-
-  if (!isValidDocumentId(documentId)) {
-    return { ok: false, error: 'invalid documentId "' + documentId + '"' };
-  }
-
-  var doc = getDocument(documentId);
-  if (!doc) {
-    return { ok: false, error: 'document "' + documentId + '" not found' };
-  }
-  if (doc.status === DOCUMENT_STATUS_ARCHIVED) {
-    Logger.log('[Document][' + ts + '] archiveDocument: "' + documentId + '" already Archived — no-op');
-    return { ok: true };
-  }
-  if (doc.status === DOCUMENT_STATUS_DELETED) {
-    return { ok: false, error: 'document "' + documentId + '" is Deleted and cannot be archived' };
-  }
-
-  var written = _updateDocumentRow(documentId, { status: DOCUMENT_STATUS_ARCHIVED });
-  if (!written) {
-    return { ok: false, error: '_updateDocumentRow returned false for "' + documentId + '"' };
-  }
-
-  Logger.log('[Document][' + ts + '] ARCHIVED' +
-             ' documentId=' + documentId +
-             ' tutorId='    + (doc.tutorId   || '') +
-             ' category='   + (doc.category  || '') +
-             ' version='    + (doc.version   || '') +
-             ' archivedBy=' + (archivedBy || 'unknown'));
-
-  return { ok: true };
-}
-
-/**
  * Replaces a document for a multipleFiles=false category.
  *
  * Steps:
- *   1. Archives the existing Active document record (metadata).
- *   2. Attempts to move the old Drive file to the category's _archive subfolder
- *      (best effort — a Drive failure logs a warning but does not abort the replace).
- *   3. Creates a new document record from newParams with version = oldVersion + 1.
- *      The new record triggers setVerificationStatus('Uploaded').
+ *   1. Trashes the old Drive file (best effort — failure logs a warning but
+ *      does not abort the replace; the old Drive file is no longer accessible
+ *      to users regardless since the old Documents record is deleted in step 2).
+ *   2. Marks the old Documents record as Deleted using the already-fetched
+ *      oldDoc — no second sheet read.
+ *   3. Creates a new document record from newParams. The new record triggers
+ *      setVerificationStatus('Uploaded') automatically.
  *
  * The caller must upload the new file to Drive first and pass the resulting
- * Drive metadata (driveFileId, driveFolderId, driveUrl) in newParams.
+ * Drive metadata (driveFileId, driveFolderId, driveUrl, storedFilename) in
+ * newParams. For single-document categories the filename is always the same
+ * fixed slug-based name, so Drive may briefly hold two files with identical
+ * names in the category folder until step 1 completes — Drive permits this.
  *
  * @param  {string} oldDocumentId  documentId of the Active document to replace
  * @param  {Object} newParams      Same params as createDocumentRecord()
  * @param  {string} replacedBy     Actor identifier
- * @return {Object} { ok, documentId, version, error }
+ * @return {Object} { ok, documentId, error }
  */
 function replaceDocument(oldDocumentId, newParams, replacedBy) {
   var ts = new Date().toISOString();
+
+  Logger.log('[Document][' + ts + '] REPLACE_ENTER' +
+             ' oldDocumentId=' + oldDocumentId +
+             ' replacedBy='    + (replacedBy || 'unknown'));
 
   if (!isValidDocumentId(oldDocumentId)) {
     return { ok: false, error: 'invalid oldDocumentId "' + oldDocumentId + '"' };
@@ -949,71 +904,54 @@ function replaceDocument(oldDocumentId, newParams, replacedBy) {
   }
   if (VERIFICATION_SCHEMA[category].multipleFiles) {
     return { ok: false, error: 'replaceDocument() is only valid for multipleFiles=false categories. ' +
-             '"' + category + '" (label: "' + VERIFICATION_SCHEMA[category].label + '") allows ' +
-             'multiple files — use archiveDocument() and createDocumentRecord() separately.' };
+             '"' + category + '" allows multiple files — use createDocumentRecord() to add another.' };
   }
 
-  // ── Step 1: Archive old document record ───────────────────────────────────
-  var archResult = archiveDocument(oldDocumentId, replacedBy || 'system');
-  if (!archResult.ok) {
-    return { ok: false, error: 'failed to archive old document: ' + archResult.error };
-  }
-
-  // ── Step 2: Move old Drive file to _archive subfolder (best effort) ────────
-  // driveGetSubfolder() throws if the subfolder doesn't exist, so we use
-  // driveCheckFolderExists() to check for _archive safely first.
+  // ── Step 1: Trash old Drive file (best effort) ────────────────────────────
   if (oldDoc.driveFileId) {
     try {
-      var tutorFolderResult = driveGetTutorFolder(oldDoc.tutorId);
-      if (tutorFolderResult.found) {
-        var categoryFolderName = VERIFICATION_SCHEMA[category].driveFolder;
-        var categoryFolder     = driveGetSubfolder(tutorFolderResult.folder, categoryFolderName);
-        var archiveCheck       = driveCheckFolderExists(categoryFolder, '_archive');
-
-        if (archiveCheck.exists) {
-          DriveApp.getFileById(oldDoc.driveFileId).moveTo(archiveCheck.folder);
-          Logger.log('[Document][' + ts + '] DRIVE_MOVED old file to _archive' +
-                     ' documentId=' + oldDocumentId +
-                     ' fileId='     + oldDoc.driveFileId +
-                     ' tutorId='    + oldDoc.tutorId +
-                     ' category='   + category);
-        } else {
-          Logger.log('[Document][' + ts + '] WARN _archive folder not found for' +
-                     ' category="' + category + '" tutorId=' + oldDoc.tutorId +
-                     ' — record archived, Drive file stays in category folder');
-        }
-      } else {
-        Logger.log('[Document][' + ts + '] WARN tutor Drive folder not found for' +
-                   ' tutorId=' + oldDoc.tutorId + ' — Drive file not moved');
-      }
-    } catch (driveErr) {
-      Logger.log('[Document][' + ts + '] WARN Drive file move failed' +
+      DriveApp.getFileById(oldDoc.driveFileId).setTrashed(true);
+      Logger.log('[Document][' + ts + '] DRIVE_TRASHED' +
                  ' documentId=' + oldDocumentId +
-                 ' error=' + driveErr.message +
-                 ' — record archived, Drive file not moved');
+                 ' fileId='     + oldDoc.driveFileId +
+                 ' category='   + category);
+    } catch (driveErr) {
+      Logger.log('[Document][' + ts + '] WARN DRIVE_TRASH_EXCEPTION' +
+                 ' documentId=' + oldDocumentId +
+                 ' error='      + driveErr.message);
     }
   }
 
+  // ── Step 2: Mark old record Deleted (oldDoc already in scope — no re-read) ─
+  var delWritten = updateSheetRowByKey(
+    getSheet('Documents'), 'documentId', oldDocumentId, { status: DOCUMENT_STATUS_DELETED }
+  );
+  if (!delWritten) {
+    return { ok: false, error: 'failed to mark old document "' + oldDocumentId + '" as Deleted' };
+  }
+  Logger.log('[Document][' + ts + '] DELETED(old)' +
+             ' documentId=' + oldDocumentId +
+             ' tutorId='    + (oldDoc.tutorId  || '') +
+             ' category='   + category +
+             ' replacedBy=' + (replacedBy || 'unknown'));
+
   // ── Step 3: Create new document record ────────────────────────────────────
-  // createDocumentRecord() computes version = max(existing) + 1 and calls
-  // setVerificationStatus('Uploaded') automatically.
   var createResult = createDocumentRecord(newParams);
   if (!createResult.ok) {
-    Logger.log('[Document][' + ts + '] ERROR replaceDocument: old record archived but' +
+    Logger.log('[Document][' + ts + '] ERROR replaceDocument: old record deleted but' +
                ' new record creation failed: ' + createResult.error);
-    return { ok: false, error: 'old document archived but new document creation failed: ' +
+    return { ok: false, error: 'old document removed but new document creation failed: ' +
              createResult.error };
   }
 
   Logger.log('[Document][' + ts + '] REPLACED' +
              ' old='        + oldDocumentId +
              ' new='        + createResult.documentId +
-             ' version='    + createResult.version +
              ' tutorId='    + (oldDoc.tutorId  || '') +
              ' category='   + category +
              ' replacedBy=' + (replacedBy || 'unknown'));
 
-  return { ok: true, documentId: createResult.documentId, version: createResult.version };
+  return { ok: true, documentId: createResult.documentId };
 }
 
 /**
@@ -1040,9 +978,9 @@ function deleteDocumentRecord(documentId, deletedBy) {
     return { ok: true };
   }
 
-  var written = _updateDocumentRow(documentId, { status: DOCUMENT_STATUS_DELETED });
+  var written = updateSheetRowByKey(getSheet('Documents'), 'documentId', documentId, { status: DOCUMENT_STATUS_DELETED });
   if (!written) {
-    return { ok: false, error: '_updateDocumentRow returned false for "' + documentId + '"' };
+    return { ok: false, error: 'row not found for documentId "' + documentId + '"' };
   }
 
   Logger.log('[Document][' + ts + '] DELETED (soft)' +
@@ -1060,6 +998,149 @@ function deleteDocumentRecord(documentId, deletedBy) {
 // ── Admin Tools ───────────────────────────────────────────────────
 // Run these functions MANUALLY from the Apps Script editor.
 // They are NOT exposed via doGet or doPost.
+
+// ── Stripe / Payment Admin Tools ─────────────────────────────────
+// Run these ONCE from the Apps Script editor to add new columns.
+// Safe to run multiple times — each skips columns that already exist.
+
+// Inserts 6 payment columns into the Requests sheet.
+function setupPaymentColumns() {
+  var sh      = getSheet('Requests');
+  var newCols = ['paymentStatus','paymentAmount','paymentIntentId','paidAt','releasedAt','stripeTransferId'];
+  var inserted = [];
+  newCols.forEach(function(col) {
+    var hdrs = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0]
+                 .map(function(h) { return String(h).trim(); });
+    if (hdrs.indexOf(col) !== -1) {
+      Logger.log('[Payment] setupPaymentColumns: "' + col + '" already exists — skipped');
+      return;
+    }
+    sh.getRange(1, sh.getLastColumn() + 1).setValue(col);
+    SpreadsheetApp.flush();
+    inserted.push(col);
+    Logger.log('[Payment] setupPaymentColumns: inserted "' + col + '"');
+  });
+  Logger.log('[Payment] setupPaymentColumns complete. Inserted: [' + inserted.join(', ') + ']');
+  return { done: inserted.length > 0, inserted: inserted };
+}
+
+// Inserts 2 Stripe Connect columns into the Applications sheet.
+function setupStripeColumns() {
+  var sh      = getSheet('Applications');
+  var newCols = ['stripeAccountId', 'stripeOnboardedAt'];
+  var inserted = [];
+  newCols.forEach(function(col) {
+    var hdrs = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0]
+                 .map(function(h) { return String(h).trim(); });
+    if (hdrs.indexOf(col) !== -1) {
+      Logger.log('[Stripe] setupStripeColumns: "' + col + '" already exists — skipped');
+      return;
+    }
+    sh.getRange(1, sh.getLastColumn() + 1).setValue(col);
+    SpreadsheetApp.flush();
+    inserted.push(col);
+    Logger.log('[Stripe] setupStripeColumns: inserted "' + col + '"');
+  });
+  Logger.log('[Stripe] setupStripeColumns complete. Inserted: [' + inserted.join(', ') + ']');
+  return { done: inserted.length > 0, inserted: inserted };
+}
+
+/**
+ * Time-driven trigger: run every 4 hours.
+ * Finds Requests with paymentStatus='Paid' and paidAt older than 72 hours,
+ * transfers the intro fee (minus platform fee) to the tutor's Stripe Connect
+ * account, then marks the request as 'Released'.
+ *
+ * Required Apps Script Properties:
+ *   STRIPE_SECRET_KEY   – Stripe secret key (sk_live_... or sk_test_...)
+ *   PLATFORM_FEE_PENCE  – Platform deduction in pence (default 0; set e.g. '300' for £3)
+ *
+ * TO SET UP THE TRIGGER:
+ *   Apps Script editor → Triggers (clock icon) → Add Trigger →
+ *   Function: releasePendingPayments | Event: Time-driven | Every 4 hours
+ */
+function releasePendingPayments() {
+  var ts       = new Date().toISOString();
+  var stripeKey = PropertiesService.getScriptProperties().getProperty('STRIPE_SECRET_KEY');
+  if (!stripeKey) {
+    Logger.log('[Release][' + ts + '] SKIP — STRIPE_SECRET_KEY not set in Script Properties');
+    return;
+  }
+  var platformFee = parseInt(
+    PropertiesService.getScriptProperties().getProperty('PLATFORM_FEE_PENCE') || '0', 10
+  ) || 0;
+
+  var reqRows  = sheetToObjects(getSheet('Requests'));
+  var appRows  = sheetToObjects(getSheet('Applications'));
+  var tutorMap = {};
+  appRows.forEach(function(a) {
+    if (a.tutorId) tutorMap[a.tutorId] = a;
+    if (a.id)      tutorMap['id:' + a.id] = a;
+  });
+
+  var now        = new Date();
+  var released   = 0;
+  var skipped    = 0;
+
+  reqRows.forEach(function(row) {
+    if (String(row.paymentStatus || '').trim() !== 'Paid') return;
+    if (!row.paidAt) return;
+
+    var paidAt       = new Date(row.paidAt);
+    var hoursElapsed = (now - paidAt) / (1000 * 60 * 60);
+    if (hoursElapsed < 72) { skipped++; return; }
+
+    var tutorApp = tutorMap['id:' + row.tutorId] || tutorMap[row.tutorId] || null;
+    if (!tutorApp || !tutorApp.stripeAccountId) {
+      Logger.log('[Release][' + ts + '] SKIP (no stripeAccountId) requestId=' + row.id +
+                 ' tutorId=' + row.tutorId);
+      skipped++;
+      return;
+    }
+
+    var paymentAmount = parseInt(String(row.paymentAmount || '0'), 10) || 0;
+    var transferAmount = paymentAmount - platformFee;
+    if (transferAmount <= 0) {
+      Logger.log('[Release][' + ts + '] SKIP (transfer amount <= 0) requestId=' + row.id);
+      skipped++;
+      return;
+    }
+
+    try {
+      var payload = 'amount=' + transferAmount +
+                    '&currency=gbp' +
+                    '&destination=' + encodeURIComponent(tutorApp.stripeAccountId) +
+                    '&transfer_group=' + encodeURIComponent(row.id);
+      var res = UrlFetchApp.fetch('https://api.stripe.com/v1/transfers', {
+        method:             'post',
+        headers:            { Authorization: 'Bearer ' + stripeKey },
+        payload:            payload,
+        muteHttpExceptions: true
+      });
+      var code = res.getResponseCode();
+      var body = JSON.parse(res.getContentText());
+
+      if (code === 200 && body.id) {
+        updateSheetRowByKey(getSheet('Requests'), 'id', row.id, {
+          paymentStatus:   'Released',
+          releasedAt:      new Date().toISOString(),
+          stripeTransferId: body.id
+        });
+        Logger.log('[Release][' + ts + '] RELEASED requestId=' + row.id +
+                   ' transferId=' + body.id + ' amount=' + transferAmount + 'p');
+        released++;
+      } else {
+        Logger.log('[Release][' + ts + '] STRIPE_ERROR requestId=' + row.id +
+                   ' code=' + code + ' error=' + JSON.stringify(body.error));
+      }
+    } catch (err) {
+      Logger.log('[Release][' + ts + '] ERROR requestId=' + row.id + ': ' + err.message);
+    }
+  });
+
+  Logger.log('[Release][' + ts + '] Done. released=' + released + ' skipped=' + skipped);
+}
+
 
 // Run ONCE to insert the tutorId column immediately after uid in the live
 // Applications sheet. No-op if tutorId already exists.
@@ -1140,6 +1221,80 @@ function migrateTutorIds() {
   Logger.log('[TutorId][' + endTs + '] === Migration complete: migrated=' +
              migrated + ' skipped=' + skipped + ' ===');
   return { migrated: migrated, skipped: skipped };
+}
+
+// Run ONCE to insert the 5 hourly rate columns into the live Applications sheet,
+// immediately after the experience column. Safe to run multiple times — no-op if
+// any column already exists.
+function setupRateColumns() {
+  var sh   = getSheet('Applications');
+  var hdrs = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0]
+               .map(function(h) { return String(h).trim(); });
+
+  var newCols = ['rateKS3', 'rateGCSE', 'rateALevel', 'rateUniversity', 'rateAdult'];
+  var expPos  = hdrs.indexOf('experience');
+
+  if (expPos === -1) {
+    Logger.log('[Rates] setupRateColumns: experience column not found — inserting at end.');
+    expPos = hdrs.length - 1;
+  }
+
+  var inserted = [];
+  // Insert in reverse order so each inserts immediately after experience
+  newCols.slice().reverse().forEach(function(col) {
+    hdrs = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0]
+              .map(function(h) { return String(h).trim(); });
+    if (hdrs.indexOf(col) !== -1) {
+      Logger.log('[Rates] setupRateColumns: "' + col + '" already exists — skipped');
+      return;
+    }
+    expPos = hdrs.indexOf('experience');
+    if (expPos === -1) expPos = hdrs.length - 1;
+    sh.insertColumnAfter(expPos + 1);
+    sh.getRange(1, expPos + 2).setValue(col);
+    SpreadsheetApp.flush();
+    inserted.unshift(col);
+    Logger.log('[Rates] setupRateColumns: inserted "' + col + '"');
+  });
+
+  Logger.log('[Rates] setupRateColumns complete. Inserted: [' + inserted.join(', ') + ']');
+  return { done: inserted.length > 0, inserted: inserted };
+}
+
+// Run ONCE to insert 6 DBS Update Service columns into the live Applications sheet.
+// Safe to run multiple times — no-op if any column already exists.
+function setupDbsVerificationColumns() {
+  var sh   = getSheet('Applications');
+  var hdrs = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0]
+               .map(function(h) { return String(h).trim(); });
+
+  var newCols = [
+    'dbsCertificateNumber',
+    'dbsUpdateServiceId',
+    'dbsIssuedDate',
+    'dbsVerificationStatus',
+    'dbsVerifiedAt',
+    'dbsVerifiedBy'
+  ];
+
+  var inserted = [];
+  newCols.slice().reverse().forEach(function(col) {
+    hdrs = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0]
+              .map(function(h) { return String(h).trim(); });
+    if (hdrs.indexOf(col) !== -1) {
+      Logger.log('[DBS] setupDbsVerificationColumns: "' + col + '" already exists — skipped');
+      return;
+    }
+    // Append after last column
+    var lastCol = sh.getLastColumn();
+    sh.getRange(1, lastCol + 1).setValue(col);
+    SpreadsheetApp.flush();
+    inserted.unshift(col);
+    Logger.log('[DBS] setupDbsVerificationColumns: inserted "' + col + '"');
+  });
+
+  Logger.log('[DBS] setupDbsVerificationColumns complete. Inserted: [' + inserted.join(', ') + ']');
+  return { done: inserted.length > 0, inserted: inserted };
 }
 
 // Run ONCE to insert driveFolderId and driveFolderUrl columns immediately after
@@ -1414,9 +1569,21 @@ function doGet(e) {
         return jsonOut(found);
       }
 
+      case 'get_tutor_by_id': {
+        var gid = String(p.id || '').trim();
+        if (!gid) return jsonOut(null);
+        var rows = sheetToObjects(getSheet('Applications'));
+        for (var gi = 0; gi < rows.length; gi++) {
+          if (String(rows[gi].id || '').trim() === gid && rows[gi].status === 'approved') {
+            return jsonOut(rows[gi]);
+          }
+        }
+        return jsonOut(null);
+      }
+
       case 'update_status': {
         var sh  = getSheet(p.sheet || 'Applications');
-        var ok  = updateRowFields(sh, p.id, { status: p.status });
+        var ok  = updateSheetRowByKey(sh, 'id', p.id, { status: p.status });
         return jsonOut({ ok: ok });
       }
 
@@ -1424,7 +1591,7 @@ function doGet(e) {
         var sh2     = getSheet(p.sheet || 'Applications');
         var update2 = {};
         update2[p.field] = p.value;
-        var ok2 = updateRowFields(sh2, p.id, update2);
+        var ok2 = updateSheetRowByKey(sh2, 'id', p.id, update2);
         return jsonOut({ ok: ok2 });
       }
 
@@ -1449,6 +1616,87 @@ function doGet(e) {
           sheetToObjects(getSheet('Requests'))
             .filter(function(r) { return r.studentUid === String(p.uid); })
         );
+
+      case 'update_payment_status': {
+        // Called by Vercel Stripe webhook after checkout.session.completed.
+        // Required: id (Requests row id), paymentIntentId, paymentAmount (pence)
+        var upsId = String(p.id || '').trim();
+        if (!upsId) return jsonOut({ ok: false, error: 'id is required' });
+        var upsUpdate = {
+          paymentStatus:   String(p.paymentStatus   || 'Paid'),
+          paymentIntentId: String(p.paymentIntentId || '').trim(),
+          paymentAmount:   String(p.paymentAmount   || '0').trim(),
+          paidAt:          new Date().toISOString()
+        };
+        var upsOk = updateSheetRowByKey(getSheet('Requests'), 'id', upsId, upsUpdate);
+        Logger.log('[Payment] update_payment_status id=' + upsId + ' ok=' + upsOk);
+        return jsonOut({ ok: upsOk });
+      }
+
+      case 'update_stripe_account': {
+        // Called by Vercel Stripe Connect webhook after account.updated with charges_enabled.
+        // Required: id (Applications row id), stripeAccountId
+        var usaId   = String(p.id || '').trim();
+        var usaAcct = String(p.stripeAccountId || '').trim();
+        if (!usaId || !usaAcct) return jsonOut({ ok: false, error: 'id and stripeAccountId required' });
+        var usaOk = updateSheetRowByKey(getSheet('Applications'), 'id', usaId, {
+          stripeAccountId:   usaAcct,
+          stripeOnboardedAt: new Date().toISOString()
+        });
+        Logger.log('[Stripe] update_stripe_account id=' + usaId + ' acct=' + usaAcct + ' ok=' + usaOk);
+        return jsonOut({ ok: usaOk });
+      }
+
+      case 'update_dbs_details': {
+        // Tutor-initiated: save DBS certificate number, Update Service ID, and issue date.
+        // Required params: id (Application row id)
+        // Optional: dbsCertificateNumber, dbsUpdateServiceId, dbsIssuedDate
+        var ddsId = String(p.id || '').trim();
+        if (!ddsId) return jsonOut({ ok: false, error: 'id is required' });
+        var ddsUpdate = {};
+        if (p.dbsCertificateNumber !== undefined) ddsUpdate.dbsCertificateNumber = String(p.dbsCertificateNumber || '').trim();
+        if (p.dbsUpdateServiceId   !== undefined) ddsUpdate.dbsUpdateServiceId   = String(p.dbsUpdateServiceId   || '').trim();
+        if (p.dbsIssuedDate        !== undefined) ddsUpdate.dbsIssuedDate        = String(p.dbsIssuedDate        || '').trim();
+        // If the tutor is providing an Update Service ID for the first time and the current status is
+        // empty, initialise it to 'Unverified' so the admin knows a check is pending.
+        if (ddsUpdate.dbsUpdateServiceId) {
+          var ddsRow = sheetToObjects(getSheet('Applications'));
+          for (var ddi = 0; ddi < ddsRow.length; ddi++) {
+            if (String(ddsRow[ddi].id || '').trim() === ddsId) {
+              var cur = String(ddsRow[ddi].dbsVerificationStatus || '').trim();
+              if (!cur) ddsUpdate.dbsVerificationStatus = 'Unverified';
+              break;
+            }
+          }
+        }
+        if (Object.keys(ddsUpdate).length === 0) return jsonOut({ ok: false, error: 'no fields to update' });
+        var ddsOk = updateSheetRowByKey(getSheet('Applications'), 'id', ddsId, ddsUpdate);
+        Logger.log('[DBS] update_dbs_details id=' + ddsId + ' ok=' + ddsOk);
+        return jsonOut({ ok: ddsOk });
+      }
+
+      case 'update_dbs_verification': {
+        // Admin-only: set dbsVerificationStatus (Verified / Failed / Unverified) on an Application row.
+        // Required params: id, dbsVerificationStatus
+        // Optional: dbsVerifiedBy (admin email or identifier)
+        var dbsId      = String(p.id || '').trim();
+        var dbsStatus  = String(p.dbsVerificationStatus || '').trim();
+        var dbsBy      = String(p.dbsVerifiedBy || 'admin').trim();
+        var validDbsStatuses = ['Verified', 'Failed', 'Unverified'];
+        if (!dbsId) return jsonOut({ ok: false, error: 'id is required' });
+        if (validDbsStatuses.indexOf(dbsStatus) === -1) {
+          return jsonOut({ ok: false, error: 'invalid dbsVerificationStatus "' + dbsStatus + '"' });
+        }
+        var dbsUpdate = {
+          dbsVerificationStatus: dbsStatus,
+          dbsVerifiedAt:  dbsStatus === 'Unverified' ? '' : new Date().toISOString(),
+          dbsVerifiedBy:  dbsStatus === 'Unverified' ? '' : dbsBy
+        };
+        var dbsOk = updateSheetRowByKey(getSheet('Applications'), 'id', dbsId, dbsUpdate);
+        Logger.log('[DBS] update_dbs_verification id=' + dbsId +
+                   ' status=' + dbsStatus + ' by=' + dbsBy + ' ok=' + dbsOk);
+        return jsonOut({ ok: dbsOk });
+      }
 
       case 'get_upload_categories': {
         // Returns VERIFICATION_SCHEMA fields required by the upload portal UI,
@@ -1532,6 +1780,66 @@ function doGet(e) {
 // ── POST Handler ─────────────────────────────────────────────────
 
 /**
+ * Resolves the Drive-stored filename for a new upload, using the schema-driven
+ * filenameSlug convention.
+ *
+ * Single-document categories produce a deterministic, fixed name:
+ *   TH202600001_Identity.pdf
+ * Replacing a single-document file naturally reuses the same name since the
+ * slug never changes.
+ *
+ * Multi-document categories produce a collision-safe numbered name:
+ *   TH202600001_RightToWork_03.pdf
+ * The suffix is computed under a LockService lock by scanning ALL Documents
+ * rows for this tutor+category (all statuses, including Deleted) and taking
+ * max(existing suffix) + 1. This prevents number reuse after a delete.
+ *
+ * Note: for multi-document categories, this function acquires its own short
+ * lock to compute the suffix atomically. A separate lock is held later by
+ * createDocumentRecord() for documentId generation and the row write. The two
+ * locks are sequential; the theoretical collision window (two simultaneous
+ * uploads from the same tutor for the same category) is negligible in a
+ * single-user upload portal.
+ *
+ * @param  {string} tutorId
+ * @param  {string} category  One of the VERIFICATION_SCHEMA keys
+ * @param  {string} ext       Lowercase extension without leading dot (e.g. 'pdf')
+ * @return {string}           e.g. 'TH202600001_Identity.pdf'
+ */
+function _resolveStoredFilename(tutorId, category, ext) {
+  var schema = VERIFICATION_SCHEMA[category];
+  if (!schema.multipleFiles) {
+    return tutorId + '_' + schema.filenameSlug + '.' + ext;
+  }
+
+  var prefix = tutorId + '_' + schema.filenameSlug + '_';
+  var lock   = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var allDocs   = sheetToObjects(getSheet('Documents'));
+    var maxSuffix = 0;
+    allDocs.forEach(function(doc) {
+      if (String(doc.tutorId  || '').trim() !== tutorId)  return;
+      if (String(doc.category || '').trim() !== category) return;
+      var name = String(doc.storedFilename || '');
+      if (name.indexOf(prefix) !== 0) return;
+      var rest = name.substring(prefix.length);
+      var m    = rest.match(/^(\d+)\./);
+      if (m) {
+        var n = parseInt(m[1], 10);
+        if (!isNaN(n) && n > maxSuffix) maxSuffix = n;
+      }
+    });
+    var next      = maxSuffix + 1;
+    var suffixStr = String(next);
+    while (suffixStr.length < 2) suffixStr = '0' + suffixStr;
+    return prefix + suffixStr + '.' + ext;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/**
  * Handles upload_document POST actions.
  *
  * Resolves tutor identity server-side from firebaseUid — never trusts any
@@ -1544,7 +1852,7 @@ function doGet(e) {
  * @param  {Object} data  Parsed POST body (type field already removed by doPost)
  *   Required: firebaseUid, category, base64Content, originalFilename, mimeType
  *   Optional: fileSize (bytes — used for server-side size validation + recording)
- * @return {Object} { ok, documentId, version, category, tutorId } | { ok: false, error }
+ * @return {Object} { ok, documentId, category, tutorId } | { ok: false, error }
  */
 function _handleDocumentUpload(data) {
   var ts = new Date().toISOString();
@@ -1608,23 +1916,41 @@ function _handleDocumentUpload(data) {
     return { ok: false, error: 'application record is incomplete — contact support' };
   }
 
-  // ── 6. Get or create tutor Drive folder (ensures complete subfolder structure) ─
+  // ── 6. Resolve tutor Drive folder — prefer stored ID over name-based lookup ──
+  // tutorRow.driveFolderId is populated for nearly every tutor after their first
+  // upload or application submission. Only fall back to driveGetOrCreateTutorFolder()
+  // (which searches Drive by name) when the stored ID is absent or invalid.
   var driveResult = null;
-  try {
-    driveResult = driveGetOrCreateTutorFolder(tutorId);
-  } catch (driveSetupErr) {
-    Logger.log('[Upload][' + ts + '] ERROR driveGetOrCreateTutorFolder: ' + driveSetupErr.message);
-    return { ok: false, error: 'could not access your document storage folder' };
-  }
-  if (!driveResult.success) {
-    Logger.log('[Upload][' + ts + '] ERROR Drive folder failed: ' + driveResult.error);
-    return { ok: false, error: 'could not access your document storage folder' };
-  }
-
-  // Backfill driveFolderId into Applications if the row was missing it.
-  if (!String(tutorRow.driveFolderId || '').trim()) {
+  var storedTutorFolderId = String(tutorRow.driveFolderId || '').trim();
+  if (storedTutorFolderId) {
     try {
-      updateRowFields(getSheet('Applications'), applicationId, {
+      var existingTutorFolder = DriveApp.getFolderById(storedTutorFolderId);
+      driveResult = {
+        success:       true,
+        tutorId:       tutorId,
+        folderId:      storedTutorFolderId,
+        folderUrl:     existingTutorFolder.getUrl(),
+        alreadyExisted: true
+      };
+    } catch (idErr) {
+      Logger.log('[Upload][' + ts + '] WARN stored driveFolderId "' + storedTutorFolderId +
+                 '" invalid: ' + idErr.message + ' — falling back to driveGetOrCreateTutorFolder');
+    }
+  }
+  if (!driveResult) {
+    try {
+      driveResult = driveGetOrCreateTutorFolder(tutorId);
+    } catch (driveSetupErr) {
+      Logger.log('[Upload][' + ts + '] ERROR driveGetOrCreateTutorFolder: ' + driveSetupErr.message);
+      return { ok: false, error: 'could not access your document storage folder' };
+    }
+    if (!driveResult.success) {
+      Logger.log('[Upload][' + ts + '] ERROR Drive folder failed: ' + driveResult.error);
+      return { ok: false, error: 'could not access your document storage folder' };
+    }
+    // Backfill the newly resolved ID into Applications so future uploads use it directly.
+    try {
+      updateSheetRowByKey(getSheet('Applications'), 'id', applicationId, {
         driveFolderId:  driveResult.folderId,
         driveFolderUrl: driveResult.folderUrl
       });
@@ -1633,21 +1959,44 @@ function _handleDocumentUpload(data) {
     }
   }
 
-  // ── 7. Navigate to category subfolder ────────────────────────────────────────
-  // driveGetSubfolder throws if the subfolder doesn't exist.
-  // driveGetOrCreateTutorFolder above guarantees the structure is in place.
+  // ── 7. Read existing Active documents for this category (single sheet read) ──
+  // Inline the filter here rather than calling getCategoryDocuments() to avoid a
+  // second .filter() pass on the result. This single read serves both the
+  // replace-vs-create decision (step 10) and the category folder ID fallback (step 8).
+  var existingActiveDocs = sheetToObjects(getSheet('Documents')).filter(function(d) {
+    return String(d.tutorId  || '').trim() === tutorId &&
+           String(d.category || '').trim() === category &&
+           String(d.status   || '').trim() === DOCUMENT_STATUS_ACTIVE;
+  });
+
+  // ── 8. Navigate to category subfolder ────────────────────────────────────────
+  // Use the stored driveFolderId from an existing Active document when available
+  // (exact ID, no name traversal). Fall back to driveGetSubfolder() only for a
+  // tutor's very first upload into this category.
   var categoryFolder = null;
   try {
-    var tutorDriveFolder = DriveApp.getFolderById(driveResult.folderId);
-    categoryFolder       = driveGetSubfolder(tutorDriveFolder, schema.driveFolder);
+    var storedCatFolderId = '';
+    for (var ei = 0; ei < existingActiveDocs.length; ei++) {
+      var cf = String(existingActiveDocs[ei].driveFolderId || '').trim();
+      if (cf) { storedCatFolderId = cf; break; }
+    }
+    if (storedCatFolderId) {
+      categoryFolder = DriveApp.getFolderById(storedCatFolderId);
+    } else {
+      var tutorDriveFolder = DriveApp.getFolderById(driveResult.folderId);
+      categoryFolder       = driveGetSubfolder(tutorDriveFolder, schema.driveFolder);
+    }
   } catch (navErr) {
     Logger.log('[Upload][' + ts + '] ERROR navigating to subfolder "' +
                schema.driveFolder + '": ' + navErr.message);
     return { ok: false, error: 'document storage subfolder not accessible — contact support' };
   }
 
-  // ── 8. Decode base64 and upload file to Drive ────────────────────────────────
-  var storedFilename = category + '_' + ts.replace(/[:.]/g, '-') + '.' + ext;
+  // ── 9. Resolve filename and upload file to Drive ──────────────────────────────
+  // _resolveStoredFilename() uses the schema filenameSlug convention:
+  //   single-doc:  TH202600001_Identity.pdf  (fixed; naturally reused on replace)
+  //   multi-doc:   TH202600001_RightToWork_03.pdf  (collision-safe suffix)
+  var storedFilename = _resolveStoredFilename(tutorId, category, ext);
   var driveFileId    = null;
   var driveUrl       = null;
   var driveFolderId  = categoryFolder.getId();
@@ -1671,42 +2020,37 @@ function _handleDocumentUpload(data) {
              ' original='   + originalFilename +
              ' size='       + fileSize);
 
-  // ── 9. Create or replace Document record ─────────────────────────────────────
+  // ── 10. Create or replace Document record ────────────────────────────────────
+  // Pass knownVerificationStatus so createDocumentRecord()'s Phase 2 call to
+  // setVerificationStatus() can skip a redundant Applications-sheet re-read.
   var docParams = {
-    tutorId:          tutorId,
-    applicationId:    applicationId,
-    firebaseUid:      firebaseUid,
-    category:         category,
-    driveFileId:      driveFileId,
-    driveFolderId:    driveFolderId,
-    driveUrl:         driveUrl,
-    originalFilename: originalFilename,
-    storedFilename:   storedFilename,
-    mimeType:         mimeType,
-    fileSize:         String(fileSize),
-    uploadedBy:       firebaseUid,
-    uploadedAt:       ts
+    tutorId:                    tutorId,
+    applicationId:              applicationId,
+    firebaseUid:                firebaseUid,
+    category:                   category,
+    driveFileId:                driveFileId,
+    driveFolderId:              driveFolderId,
+    driveUrl:                   driveUrl,
+    originalFilename:           originalFilename,
+    storedFilename:             storedFilename,
+    mimeType:                   mimeType,
+    fileSize:                   String(fileSize),
+    uploadedBy:                 firebaseUid,
+    uploadedAt:                 ts,
+    knownVerificationStatus:    tutorRow[schema.column] || VERIFICATION_STATUS_DEFAULT
   };
 
-  // ── 9. Create or replace Document record ─────────────────────────────────────
   // If record creation fails after Drive upload succeeds, roll back by trashing
-  // the Drive file so Drive and the Documents sheet remain in sync.
+  // the newly uploaded Drive file so Drive and the Documents sheet stay in sync.
   var createResult;
   try {
-    if (!schema.multipleFiles) {
-      // Single-document category: find any existing Active record and replace it.
-      // replaceDocument() archives the old record, moves the old Drive file to
-      // _archive (best effort), then calls createDocumentRecord() for the new one.
-      var existing = getCategoryDocuments(tutorId, category).filter(function(d) {
-        return String(d.status || '').trim() === DOCUMENT_STATUS_ACTIVE;
-      });
-      if (existing.length > 0) {
-        createResult = replaceDocument(existing[0].documentId, docParams, firebaseUid);
-      } else {
-        createResult = createDocumentRecord(docParams);
-      }
+    if (!schema.multipleFiles && existingActiveDocs.length > 0) {
+      // Single-document category with an existing Active record: replace it.
+      // replaceDocument() trashes the old Drive file, marks the old record
+      // Deleted, then calls createDocumentRecord() for the new one.
+      createResult = replaceDocument(existingActiveDocs[0].documentId, docParams, firebaseUid);
     } else {
-      // Multi-document category: always add a new record (never replaces).
+      // Multi-document category or first upload for this category: always create.
       createResult = createDocumentRecord(docParams);
     }
   } catch (recordErr) {
@@ -1728,8 +2072,8 @@ function _handleDocumentUpload(data) {
   Logger.log('[Upload][' + ts + '] SUCCESS' +
              ' tutorId='    + tutorId +
              ' documentId=' + createResult.documentId +
-             ' version='    + createResult.version +
              ' category='   + category +
+             ' stored='     + storedFilename +
              ' original='   + originalFilename +
              ' size='       + fileSize +
              ' driveFileId=' + driveFileId);
@@ -1737,7 +2081,6 @@ function _handleDocumentUpload(data) {
   return {
     ok:         true,
     documentId: createResult.documentId,
-    version:    createResult.version,
     category:   category,
     tutorId:    tutorId
   };
@@ -1812,7 +2155,7 @@ function doPost(e) {
         try {
           var driveResult = driveGetOrCreateTutorFolder(data.tutorId);
           if (driveResult.success) {
-            updateRowFields(getSheet('Applications'), data.id, {
+            updateSheetRowByKey(getSheet('Applications'), 'id', data.id, {
               driveFolderId:  driveResult.folderId,
               driveFolderUrl: driveResult.folderUrl
             });

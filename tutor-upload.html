@@ -69,6 +69,45 @@
     <!-- Category cards -->
     <div class="row g-4" id="category-grid"></div>
 
+    <!-- DBS Update Service section -->
+    <div class="card p-4 mt-4" id="dbs-service-section" style="display:none">
+      <div class="d-flex align-items-start gap-3 mb-3">
+        <div class="stat-icon blue flex-shrink-0"><i class="bi bi-shield-check fs-5"></i></div>
+        <div>
+          <h6 class="fw-700 mb-1">DBS Update Service <span class="badge bg-secondary fw-normal" style="font-size:.7rem">Optional</span></h6>
+          <small class="text-muted">Providing your DBS Update Service details allows our admin team to verify your DBS status online without requiring a new certificate. <a href="https://www.gov.uk/dbs-update-service" target="_blank" rel="noopener">About the DBS Update Service <i class="bi bi-box-arrow-up-right"></i></a></small>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <div class="fw-600 small mb-1" style="text-transform:uppercase;letter-spacing:.07em;opacity:.6;font-size:.74rem">Admin Verification Status</div>
+        <div id="dbs-status-badge"></div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-sm-6">
+          <label class="form-label small fw-600">DBS Certificate Number</label>
+          <input type="text" id="dbs-cert-input" class="form-control form-control-sm" placeholder="e.g. 001234567890" maxlength="20" />
+          <div class="form-text">12-digit number from your DBS certificate.</div>
+        </div>
+        <div class="col-sm-6">
+          <label class="form-label small fw-600">Update Service Subscription ID</label>
+          <input type="text" id="dbs-service-input" class="form-control form-control-sm" placeholder="e.g. 1234567890" maxlength="20" />
+          <div class="form-text">Your DBS Update Service reference number.</div>
+        </div>
+        <div class="col-sm-6">
+          <label class="form-label small fw-600">Certificate Issue Date</label>
+          <input type="date" id="dbs-issued-input" class="form-control form-control-sm" />
+        </div>
+      </div>
+
+      <div id="dbs-save-result" class="mb-2"></div>
+
+      <button class="btn btn-outline-primary btn-sm" id="dbs-save-btn" onclick="window._up.saveDbs()">
+        <i class="bi bi-save me-1"></i>Save DBS Details
+      </button>
+    </div>
+
   </div>
 </section>
 
@@ -84,10 +123,11 @@
 <script src="js/theme.js"></script>
 
 <script type="module">
-import { auth, onAuthStateChanged, getUploadCategories, uploadDocument, formatDate } from './js/firebase.js';
+import { auth, onAuthStateChanged, getUploadCategories, uploadDocument, formatDate, getTutorByUid, updateDbsDetails } from './js/firebase.js';
 
 let currentUser     = null;
 let categoriesCache = [];
+let tutorRow        = null; // full Applications row, loaded alongside categories
 
 // ── Auth guard ────────────────────────────────────────────────────────────────
 onAuthStateChanged(auth, async (user) => {
@@ -101,13 +141,18 @@ onAuthStateChanged(auth, async (user) => {
 // ── Data loading ──────────────────────────────────────────────────────────────
 async function loadPage() {
   try {
-    const cats = await getUploadCategories();
+    const [cats, tutors] = await Promise.all([
+      getUploadCategories(),
+      getTutorByUid(currentUser.uid)
+    ]);
     if (!Array.isArray(cats) || cats.length === 0) {
       showError('Could not load document categories. Please refresh the page.');
       return;
     }
     categoriesCache = cats;
+    tutorRow = tutors || null;
     renderPage();
+    renderDbsSection();
   } catch (e) {
     showError('Failed to load your document status. Please refresh the page.');
   }
@@ -313,8 +358,67 @@ function escHtml(s) {
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+// ── DBS Update Service section ────────────────────────────────────────────────
+function renderDbsSection() {
+  const sec = document.getElementById('dbs-service-section');
+  if (!sec) return;
+  sec.style.display = '';
+
+  if (!tutorRow) return;
+  document.getElementById('dbs-cert-input').value    = tutorRow.dbsCertificateNumber || '';
+  document.getElementById('dbs-service-input').value = tutorRow.dbsUpdateServiceId   || '';
+  document.getElementById('dbs-issued-input').value  = tutorRow.dbsIssuedDate        || '';
+
+  const status = tutorRow.dbsVerificationStatus || '';
+  const badgeEl = document.getElementById('dbs-status-badge');
+  if (badgeEl) {
+    const cfg = {
+      'Verified':   { cls: 'bg-success',           icon: 'bi-shield-fill-check', text: 'DBS Verified by TutorHut Admin' },
+      'Failed':     { cls: 'bg-danger',             icon: 'bi-shield-fill-x',    text: 'Verification Failed — contact support' },
+      'Unverified': { cls: 'bg-warning text-dark',  icon: 'bi-shield-exclamation', text: 'Pending Admin Verification' }
+    };
+    const s = cfg[status];
+    badgeEl.innerHTML = s
+      ? `<span class="badge ${s.cls}"><i class="bi ${s.icon} me-1"></i>${s.text}</span>`
+      : `<span class="badge bg-secondary">Not provided</span>`;
+  }
+}
+
+async function saveDbs() {
+  if (!tutorRow) return;
+  const btn    = document.getElementById('dbs-save-btn');
+  const resEl  = document.getElementById('dbs-save-result');
+  const cert   = document.getElementById('dbs-cert-input').value.trim();
+  const svcId  = document.getElementById('dbs-service-input').value.trim();
+  const issued = document.getElementById('dbs-issued-input').value;
+
+  btn.disabled  = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving…';
+  if (resEl) resEl.innerHTML = '';
+
+  try {
+    const res = await updateDbsDetails(tutorRow.id, { dbsCertificateNumber: cert, dbsUpdateServiceId: svcId, dbsIssuedDate: issued });
+    if (res && res.ok) {
+      // Update local cache so re-render shows correct state
+      tutorRow.dbsCertificateNumber = cert;
+      tutorRow.dbsUpdateServiceId   = svcId;
+      tutorRow.dbsIssuedDate        = issued;
+      if (svcId && !tutorRow.dbsVerificationStatus) tutorRow.dbsVerificationStatus = 'Unverified';
+      renderDbsSection();
+      if (resEl) resEl.innerHTML = `<div class="alert alert-success py-2 px-3 mb-0" style="font-size:.85rem"><i class="bi bi-check-circle-fill me-1"></i>DBS details saved. Our admin team will verify your DBS Update Service status.</div>`;
+    } else {
+      if (resEl) resEl.innerHTML = `<div class="alert alert-danger py-2 px-3 mb-0" style="font-size:.85rem"><i class="bi bi-exclamation-triangle-fill me-1"></i>Could not save — please try again.</div>`;
+    }
+  } catch (e) {
+    if (resEl) resEl.innerHTML = `<div class="alert alert-danger py-2 px-3 mb-0" style="font-size:.85rem"><i class="bi bi-exclamation-triangle-fill me-1"></i>Error saving details. Please refresh and try again.</div>`;
+  }
+
+  btn.disabled  = false;
+  btn.innerHTML = '<i class="bi bi-save me-1"></i>Save DBS Details';
+}
+
 // Expose to inline onclick/onchange attributes (module scope is not global)
-window._up = { trigger, select };
+window._up = { trigger, select, saveDbs };
 </script>
 
 </body>

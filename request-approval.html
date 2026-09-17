@@ -87,6 +87,7 @@
               <th>Day &amp; Time</th>
               <th>Submitted</th>
               <th>Status</th>
+              <th>Payment</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -132,7 +133,7 @@
     document.getElementById("stat-rejected") && (document.getElementById("stat-rejected").textContent = all.filter(r => r.status==="rejected").length);
 
     if (!all.length) {
-      tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-5">
+      tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-5">
         <i class="bi bi-inbox fs-1 d-block mb-2 opacity-25"></i>No requests yet.</td></tr>`;
       return;
     }
@@ -147,6 +148,12 @@
         rejected: '<span class="badge bg-danger">Rejected</span>'
       }[req.status] || '<span class="badge bg-secondary">Unknown</span>';
 
+      const ps = String(req.paymentStatus || "").toLowerCase();
+      const payBadge = ps === "released" ? '<span class="badge bg-success">Released</span>'
+        : ps === "paid"    ? '<span class="badge bg-info text-dark">Paid</span>'
+        : req.status === "approved" ? '<span class="badge bg-warning text-dark">Unpaid</span>'
+        : '<span class="text-muted small">—</span>';
+
       const actions = req.status === "pending"
         ? `<button class="btn btn-success btn-sm me-1" onclick="decide('${req.id}','approved')">Approve</button>
            <button class="btn btn-outline-danger btn-sm" onclick="decide('${req.id}','rejected')">Reject</button>`
@@ -160,6 +167,7 @@
           <td class="small">${req.day||"—"}${req.time ? ` · ${req.time}` : ""}</td>
           <td class="small">${date}</td>
           <td>${statusBadge}</td>
+          <td>${payBadge}</td>
           <td>${actions}</td>
         </tr>`);
     });

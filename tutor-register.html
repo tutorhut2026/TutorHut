@@ -147,6 +147,80 @@
             </div>
           </div>
 
+          <!-- Your Rates -->
+          <div class="form-section">
+            <div class="form-section-title"><i class="bi bi-currency-pound me-2"></i>Your Hourly Rates</div>
+            <p class="text-muted small mb-3">Set your rate (£/hr) for each academic level. Leave blank or enter 0 to show "Rate on request" for that level.</p>
+            <div class="row g-3">
+              <div class="col-sm-6 col-md-4">
+                <label class="form-label">KS3 (Year 7–9)</label>
+                <div class="input-group">
+                  <span class="input-group-text">£</span>
+                  <input id="t-rate-ks3" type="number" min="0" max="999" step="1" class="form-control" placeholder="e.g. 25" />
+                  <span class="input-group-text">/hr</span>
+                </div>
+              </div>
+              <div class="col-sm-6 col-md-4">
+                <label class="form-label">GCSE (Year 10–11)</label>
+                <div class="input-group">
+                  <span class="input-group-text">£</span>
+                  <input id="t-rate-gcse" type="number" min="0" max="999" step="1" class="form-control" placeholder="e.g. 30" />
+                  <span class="input-group-text">/hr</span>
+                </div>
+              </div>
+              <div class="col-sm-6 col-md-4">
+                <label class="form-label">A-Level (Year 12–13)</label>
+                <div class="input-group">
+                  <span class="input-group-text">£</span>
+                  <input id="t-rate-alevel" type="number" min="0" max="999" step="1" class="form-control" placeholder="e.g. 40" />
+                  <span class="input-group-text">/hr</span>
+                </div>
+              </div>
+              <div class="col-sm-6 col-md-4">
+                <label class="form-label">University</label>
+                <div class="input-group">
+                  <span class="input-group-text">£</span>
+                  <input id="t-rate-uni" type="number" min="0" max="999" step="1" class="form-control" placeholder="e.g. 50" />
+                  <span class="input-group-text">/hr</span>
+                </div>
+              </div>
+              <div class="col-sm-6 col-md-4">
+                <label class="form-label">Adult Learning</label>
+                <div class="input-group">
+                  <span class="input-group-text">£</span>
+                  <input id="t-rate-adult" type="number" min="0" max="999" step="1" class="form-control" placeholder="e.g. 30" />
+                  <span class="input-group-text">/hr</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- DBS Update Service (Optional) -->
+          <div class="form-section">
+            <div class="form-section-title"><i class="bi bi-shield-check me-2"></i>DBS Update Service <span class="badge bg-secondary fw-normal fs-8 ms-2" style="font-size:0.7rem;">Optional</span></div>
+            <div class="alert alert-light border d-flex align-items-start gap-2 mb-3 py-2 px-3">
+              <i class="bi bi-info-circle text-primary mt-1 flex-shrink-0"></i>
+              <small>If you have registered your Enhanced DBS certificate with the <strong>Government's DBS Update Service</strong>, enter your details below. This allows us to verify your DBS status online without requiring a new check. You can also add this later from your document upload portal. <a href="https://www.gov.uk/dbs-update-service" target="_blank" rel="noopener">Learn more about the DBS Update Service <i class="bi bi-box-arrow-up-right"></i></a></small>
+            </div>
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <label class="form-label">DBS Certificate Number</label>
+                <input id="t-dbs-cert" type="text" class="form-control" placeholder="e.g. 001234567890" maxlength="20" />
+                <div class="form-text">The 12-digit number printed on your DBS certificate.</div>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Update Service Subscription ID</label>
+                <input id="t-dbs-service-id" type="text" class="form-control" placeholder="e.g. 1234567890" maxlength="20" />
+                <div class="form-text">Your reference number from the DBS Update Service.</div>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">DBS Certificate Issue Date</label>
+                <input id="t-dbs-issued" type="date" class="form-control" />
+                <div class="form-text">The date printed on your DBS certificate.</div>
+              </div>
+            </div>
+          </div>
+
           <!-- Availability -->
           <div class="form-section">
             <div class="form-section-title"><i class="bi bi-calendar3 me-2"></i>Availability</div>
@@ -256,6 +330,18 @@
     const pwd     = document.getElementById("t-pwd").value;
     const confirm = document.getElementById("t-confirm").value;
 
+    // Rates — store as integer pence-equivalent (whole £); 0 = "rate on request"
+    const rateKS3      = parseInt(document.getElementById("t-rate-ks3").value)    || 0;
+    const rateGCSE     = parseInt(document.getElementById("t-rate-gcse").value)   || 0;
+    const rateALevel   = parseInt(document.getElementById("t-rate-alevel").value) || 0;
+    const rateUniversity = parseInt(document.getElementById("t-rate-uni").value)  || 0;
+    const rateAdult    = parseInt(document.getElementById("t-rate-adult").value)  || 0;
+
+    // DBS Update Service (optional)
+    const dbsCertificateNumber = document.getElementById("t-dbs-cert").value.trim();
+    const dbsUpdateServiceId   = document.getElementById("t-dbs-service-id").value.trim();
+    const dbsIssuedDate        = document.getElementById("t-dbs-issued").value;
+
     if (pwd !== confirm) {
       errDiv.textContent = "Passwords do not match.";
       errDiv.classList.remove("d-none");
@@ -287,6 +373,11 @@
         experience: exp,
         certifications: certs,
         availability: [days && `Days: ${days}`, times && `Times: ${times}`].filter(Boolean).join(" | "),
+        // Hourly rates per level (0 = rate on request)
+        rateKS3, rateGCSE, rateALevel, rateUniversity, rateAdult,
+        // DBS Update Service (optional — empty string if not provided)
+        dbsCertificateNumber, dbsUpdateServiceId, dbsIssuedDate,
+        dbsVerificationStatus: dbsUpdateServiceId ? 'Unverified' : '',
         status: "pending",
         verified: "false",
         submittedAt: new Date().toISOString()

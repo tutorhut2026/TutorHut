@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -8,6 +8,44 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
   <link rel="stylesheet" href="css/style.css" />
   <script>if(localStorage.theme==='dark')document.documentElement.dataset.theme='dark'</script>
+  <style>
+    .tl-step { display: flex; gap: .75rem; padding-bottom: 1.2rem; position: relative; }
+    .tl-step:not(:last-child)::before {
+      content: ""; position: absolute; left: 14px; top: 28px;
+      width: 2px; height: calc(100% - 12px); background: var(--border);
+    }
+    .tl-step.done::before { background: var(--success); }
+    .tl-dot {
+      width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .75rem; font-weight: 700; border: 2px solid var(--border);
+      background: var(--light); color: var(--text-muted); z-index: 1;
+    }
+    .tl-step.done   .tl-dot { background: var(--success); border-color: var(--success); color: #fff; }
+    .tl-step.active .tl-dot { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .tl-step.fail   .tl-dot { background: #EF4444; border-color: #EF4444; color: #fff; }
+    .tl-text { padding-top: 4px; }
+    .tl-text strong { display: block; font-size: .9rem; }
+    .tl-text small   { color: var(--text-muted); font-size: .78rem; }
+
+    .doc-pill {
+      display: flex; align-items: center; gap: .5rem; padding: .5rem .75rem;
+      border-radius: 8px; border: 1px solid var(--border); font-size: .82rem;
+    }
+    .doc-pill .pill-icon { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .85rem; flex-shrink: 0; }
+    .doc-pill.approved  { background: #D1FAE5; border-color: #6EE7B7; }
+    .doc-pill.uploaded  { background: #DBEAFE; border-color: #93C5FD; }
+    .doc-pill.pending   { background: #FEF3C7; border-color: #FCD34D; }
+    .doc-pill.missing   { background: var(--light); }
+    .doc-pill.rejected  { background: #FEE2E2; border-color: #FCA5A5; }
+
+    .check-item { display: flex; align-items: center; gap: .75rem; padding: .5rem 0; border-bottom: 1px solid var(--border); }
+    .check-item:last-child { border-bottom: 0; }
+    .check-icon { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .8rem; flex-shrink: 0; }
+    .check-icon.ok   { background: #D1FAE5; color: var(--success); }
+    .check-icon.warn { background: #FEF3C7; color: #D97706; }
+    .check-icon.miss { background: var(--light); color: var(--text-muted); border: 1px dashed var(--border); }
+  </style>
 </head>
 <body>
 
@@ -16,107 +54,14 @@
 <div class="page-header">
   <div class="container">
     <h1>Tutor Dashboard</h1>
-    <p>Track your application status and manage your tutor profile.</p>
+    <p id="dash-subtitle">Loading your dashboard…</p>
   </div>
 </div>
 
 <section class="section">
-  <div class="container">
-    <div class="row g-4">
-
-      <!-- Application Status Card -->
-      <div class="col-lg-4">
-        <div class="card p-4 h-100">
-          <h5 class="fw-700 mb-4">Application Status</h5>
-          <div class="text-center mb-4">
-            <div class="avatar-placeholder avatar-lg mx-auto mb-3"><i class="bi bi-person-fill"></i></div>
-            <h5 class="fw-700 mb-1">Your Application</h5>
-            <span class="badge badge-status-pending px-3 py-2 rounded-pill">⏳ Under Review</span>
-          </div>
-          <div class="divider"></div>
-          <ul class="status-timeline mt-3">
-            <li class="done">
-              <span>Application Submitted</span>
-              <small>Received by admin</small>
-            </li>
-            <li class="active">
-              <span>Admin Review</span>
-              <small>In progress – estimated 3–5 days</small>
-            </li>
-            <li>
-              <span>Decision Made</span>
-              <small>Pending</small>
-            </li>
-            <li>
-              <span>Profile Published</span>
-              <small>Pending approval</small>
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- Profile Summary -->
-      <div class="col-lg-8">
-        <div class="card p-4 mb-4">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="fw-700 mb-0">Your Submitted Details</h5>
-            <span class="badge badge-status-pending">Pending Review</span>
-          </div>
-          <div class="text-center py-4 text-muted">
-            <i class="bi bi-hourglass-split fs-2 d-block mb-2 opacity-25"></i>
-            <p class="small mb-0">Your application details are being reviewed by the admin team. You will be notified by email once a decision has been made.</p>
-          </div>
-        </div>
-
-        <!-- Notifications -->
-        <div class="card p-4">
-          <h5 class="fw-700 mb-3">Notifications</h5>
-          <div class="alert alert-info d-flex gap-2 align-items-start mb-2">
-            <i class="bi bi-envelope-fill flex-shrink-0 mt-1"></i>
-            <div><strong>Application received</strong> – We've received your application and it is currently under review by our admin team.</div>
-          </div>
-          <div class="alert alert-warning d-flex gap-2 align-items-start mb-0">
-            <i class="bi bi-clock flex-shrink-0 mt-1"></i>
-            <div><strong>Review in progress</strong> – Our team is reviewing your qualifications. You'll be notified by email once a decision is made.</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- What happens next -->
-      <div class="col-12">
-        <div class="card p-4">
-          <h5 class="fw-700 mb-3">What Happens Next?</h5>
-          <div class="row g-3">
-            <div class="col-md-4">
-              <div class="d-flex gap-3">
-                <div class="step-number flex-shrink-0" style="width:40px;height:40px;font-size:1rem">1</div>
-                <div>
-                  <h6 class="fw-700 mb-1">Admin Review</h6>
-                  <p class="small text-muted mb-0">Our team checks your qualifications, experience, and application details.</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="d-flex gap-3">
-                <div class="step-number flex-shrink-0" style="width:40px;height:40px;font-size:1rem;background:var(--accent)">2</div>
-                <div>
-                  <h6 class="fw-700 mb-1">Approval Decision</h6>
-                  <p class="small text-muted mb-0">You'll receive an email with the outcome within 3–5 working days.</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="d-flex gap-3">
-                <div class="step-number flex-shrink-0" style="width:40px;height:40px;font-size:1rem;background:var(--success)">3</div>
-                <div>
-                  <h6 class="fw-700 mb-1">Go Live</h6>
-                  <p class="small text-muted mb-0">Once approved, your profile is published and students can request sessions.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+  <div class="container" id="dash-root">
+    <div class="text-center py-5">
+      <div class="spinner-border text-primary" role="status"></div>
     </div>
   </div>
 </section>
@@ -129,6 +74,333 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
 <script src="js/script.js"></script>
+<script type="module">
+  import { auth, onAuthStateChanged, getTutorByUid, getUploadCategories, getStripeOnboardingLink } from "./js/firebase.js";
+
+  const root = document.getElementById("dash-root");
+
+  function statusBadge(status) {
+    const map = {
+      approved: `<span class="badge badge-status-approved px-3 py-2"><i class="bi bi-check-circle-fill me-1"></i>Approved</span>`,
+      pending:  `<span class="badge badge-status-pending px-3 py-2"><i class="bi bi-hourglass-split me-1"></i>Under Review</span>`,
+      rejected: `<span class="badge badge-status-rejected px-3 py-2"><i class="bi bi-x-circle-fill me-1"></i>Not Approved</span>`,
+    };
+    return map[status] || map.pending;
+  }
+
+  function buildTimeline(status) {
+    const st = String(status || "pending").toLowerCase();
+    const steps = [
+      { label: "Application Submitted",  note: "Received by admin team",         state: "done"   },
+      { label: "Admin Review",           note: st === "pending" ? "In progress – estimated 3–5 working days" : "Completed", state: st === "pending" ? "active" : "done" },
+      { label: "Decision Made",          note: st === "approved" ? "Your application was approved!" : st === "rejected" ? "Application not approved" : "Pending", state: st === "approved" ? "done" : st === "rejected" ? "fail" : "" },
+      { label: "Profile Published",      note: st === "approved" ? "Your profile is live on TutorHut" : "Awaiting approval", state: st === "approved" ? "done" : "" }
+    ];
+    return steps.map(s => `
+      <div class="tl-step ${s.state}">
+        <div class="tl-dot">${s.state === "done" ? '<i class="bi bi-check"></i>' : s.state === "active" ? '<i class="bi bi-hourglass-split"></i>' : s.state === "fail" ? '<i class="bi bi-x"></i>' : ""}</div>
+        <div class="tl-text"><strong>${s.label}</strong><small>${s.note}</small></div>
+      </div>`).join("");
+  }
+
+  function buildDocGrid(cats) {
+    const approved = cats.filter(c => c.status === "Approved").length;
+    const total    = cats.length;
+    const pct      = Math.round((approved / total) * 100);
+
+    const pills = cats.map(c => {
+      let cls = "missing", icon = "bi-file-earmark", iconBg = "background:#E5E7EB;color:#6B7280";
+      if      (c.status === "Approved")           { cls = "approved"; icon = "bi-check-circle-fill"; iconBg = "background:#D1FAE5;color:#059669"; }
+      else if (c.status === "Pending Review")     { cls = "pending";  icon = "bi-hourglass-split";  iconBg = "background:#FEF3C7;color:#D97706"; }
+      else if (c.status === "Uploaded")           { cls = "uploaded"; icon = "bi-cloud-check-fill"; iconBg = "background:#DBEAFE;color:#2563EB"; }
+      else if (c.status === "Rejected" || c.status === "Re-upload Required") { cls = "rejected"; icon = "bi-x-circle-fill"; iconBg = "background:#FEE2E2;color:#EF4444"; }
+      return `
+        <div class="doc-pill ${cls}">
+          <div class="pill-icon" style="${iconBg}"><i class="bi ${icon}"></i></div>
+          <div class="flex-grow-1">
+            <div class="fw-600">${c.label}</div>
+            <div class="text-muted" style="font-size:.75rem">${c.status || "Not Submitted"}</div>
+          </div>
+          ${c.status !== "Approved" ? `<a href="tutor-upload.html" class="btn btn-outline-primary btn-sm py-0" style="font-size:.75rem">Upload</a>` : ""}
+        </div>`;
+    }).join("");
+
+    return `
+      <div class="mb-3">
+        <div class="d-flex justify-content-between small mb-1">
+          <span class="fw-600">Verification Progress</span>
+          <span class="text-muted">${approved} / ${total} approved</span>
+        </div>
+        <div class="progress" style="height:8px">
+          <div class="progress-bar bg-success" style="width:${pct}%"></div>
+        </div>
+      </div>
+      <div class="d-flex flex-column gap-2">${pills}</div>`;
+  }
+
+  function buildChecklist(tutor, cats) {
+    const items = [
+      {
+        label: "Bio / About Me",
+        ok: !!(tutor.bio && tutor.bio.trim()),
+        hint: "Add a bio in your registration details",
+        link: null
+      },
+      {
+        label: "At least one hourly rate set",
+        ok: ["rateKS3","rateGCSE","rateALevel","rateUniversity","rateAdult"].some(k => parseInt(tutor[k]) > 0),
+        hint: "Set your rates when you registered — contact admin to update",
+        link: null
+      },
+      {
+        label: "Subjects listed",
+        ok: !!(tutor.subjects && tutor.subjects.trim()),
+        hint: "Contact admin to update your subjects list",
+        link: null
+      },
+      {
+        label: "DBS details provided",
+        ok: !!(tutor.dbsCertificateNumber || tutor.dbsUpdateServiceId),
+        hint: "Add your DBS certificate details on the upload page",
+        link: "tutor-upload.html"
+      },
+      {
+        label: "All required documents uploaded",
+        ok: cats.filter(c => c.required && c.status !== "Approved").length === 0,
+        hint: "Upload your pending verification documents",
+        link: "tutor-upload.html"
+      }
+    ];
+    const done  = items.filter(i => i.ok).length;
+    const pct   = Math.round((done / items.length) * 100);
+    const rows  = items.map(i => `
+      <div class="check-item">
+        <div class="check-icon ${i.ok ? "ok" : "miss"}">
+          <i class="bi ${i.ok ? "bi-check" : "bi-dash"}"></i>
+        </div>
+        <div class="flex-grow-1 small">
+          <span class="${i.ok ? "" : "text-muted"}">${i.label}</span>
+          ${!i.ok ? `<div class="text-muted" style="font-size:.76rem">${i.hint}</div>` : ""}
+        </div>
+        ${(!i.ok && i.link) ? `<a href="${i.link}" class="btn btn-outline-primary btn-sm py-0" style="font-size:.75rem">Fix</a>` : ""}
+      </div>`).join("");
+    return `
+      <div class="mb-3">
+        <div class="d-flex justify-content-between small mb-1">
+          <span class="fw-600">Profile Completeness</span>
+          <span class="text-muted">${done} / ${items.length}</span>
+        </div>
+        <div class="progress" style="height:8px">
+          <div class="progress-bar" style="width:${pct}%;background:var(--accent)"></div>
+        </div>
+      </div>
+      ${rows}`;
+  }
+
+  function render(tutor, cats) {
+    const name   = (tutor.name || "").split(" ")[0] || "Tutor";
+    const status = String(tutor.status || "pending").toLowerCase();
+    const initial = (tutor.name || "T").charAt(0).toUpperCase();
+
+    document.getElementById("dash-subtitle").textContent =
+      status === "approved" ? `Welcome back, ${name}. Your profile is live.`
+      : status === "rejected" ? `Hi ${name}. Please contact us for more information.`
+      : `Hi ${name}. Your application is under review.`;
+
+    root.innerHTML = `
+      <div class="row g-4">
+
+        <!-- Status + Timeline -->
+        <div class="col-lg-4">
+          <div class="card p-4 h-100">
+            <div class="text-center mb-4">
+              <div class="avatar-placeholder avatar-lg mx-auto mb-3"><span style="font-size:1.5rem">${initial}</span></div>
+              <h5 class="fw-700 mb-2">${tutor.name || ""}</h5>
+              ${statusBadge(status)}
+            </div>
+            <hr class="my-3">
+            <h6 class="fw-700 mb-3">Application Progress</h6>
+            ${buildTimeline(status)}
+            ${status === "approved" ? `
+            <hr class="mt-0">
+            <a href="tutor-profile.html?id=${tutor.id}" class="btn btn-outline-primary w-100 btn-sm">
+              <i class="bi bi-person-badge me-2"></i>View Public Profile
+            </a>` : ""}
+            ${status === "rejected" ? `
+            <div class="alert alert-danger small p-2 mb-0 mt-2">
+              <i class="bi bi-envelope me-1"></i>Contact us at <a href="mailto:admin@tutorhut.com">admin@tutorhut.com</a> for details.
+            </div>` : ""}
+          </div>
+        </div>
+
+        <!-- Right column -->
+        <div class="col-lg-8">
+          <div class="row g-4">
+
+            <!-- Documents -->
+            <div class="col-12">
+              <div class="card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h5 class="fw-700 mb-0"><i class="bi bi-folder2-open me-2 text-primary"></i>Document Verification</h5>
+                  <a href="tutor-upload.html" class="btn btn-primary btn-sm"><i class="bi bi-cloud-upload me-1"></i>Upload</a>
+                </div>
+                ${cats.length ? buildDocGrid(cats) : `<p class="text-muted small mb-0">No document categories found.</p>`}
+              </div>
+            </div>
+
+            <!-- Profile completeness -->
+            <div class="col-md-6">
+              <div class="card p-4 h-100">
+                <h5 class="fw-700 mb-3"><i class="bi bi-list-check me-2 text-primary"></i>Profile Checklist</h5>
+                ${buildChecklist(tutor, cats)}
+              </div>
+            </div>
+
+            <!-- Quick info -->
+            <div class="col-md-6">
+              <div class="card p-4 h-100">
+                <h5 class="fw-700 mb-3"><i class="bi bi-person-vcard me-2 text-primary"></i>Your Details</h5>
+                ${tutor.qualification ? `<div class="small mb-2"><span class="text-muted">Qualification</span><br><strong>${tutor.qualification}</strong></div>` : ""}
+                ${tutor.field         ? `<div class="small mb-2"><span class="text-muted">Field</span><br><strong>${tutor.field}</strong></div>` : ""}
+                ${tutor.subjects      ? `<div class="small mb-2"><span class="text-muted">Subjects</span><br>${tutor.subjects.split(",").map(s => `<span class="badge-subject me-1">${s.trim()}</span>`).join("")}</div>` : ""}
+                ${tutor.tutorId       ? `<div class="small mb-2"><span class="text-muted">Tutor ID</span><br><code>${tutor.tutorId}</code></div>` : ""}
+                <hr>
+                <div class="small mb-1 fw-600 text-muted">Your Rates</div>
+                ${[["KS3","rateKS3"],["GCSE","rateGCSE"],["A-Level","rateALevel"],["University","rateUniversity"],["Adult","rateAdult"]]
+                  .filter(([,k]) => parseInt(tutor[k]) > 0)
+                  .map(([l,k]) => `<span class="badge bg-light text-dark border me-1 mb-1">${l}: £${tutor[k]}/hr</span>`)
+                  .join("") || `<span class="text-muted small">No rates set yet.</span>`}
+                <hr>
+                <div class="small mb-1 fw-600 text-muted">DBS Status</div>
+                ${tutor.dbsVerificationStatus === "Verified"   ? `<span class="badge bg-success"><i class="bi bi-shield-fill-check me-1"></i>DBS Verified</span>`
+                : tutor.dbsVerificationStatus === "Unverified" ? `<span class="badge bg-warning text-dark"><i class="bi bi-shield-exclamation me-1"></i>DBS Pending Check</span>`
+                : tutor.dbsVerificationStatus === "Failed"     ? `<span class="badge bg-danger"><i class="bi bi-shield-fill-x me-1"></i>DBS Failed</span>`
+                : `<span class="text-muted small">Not provided — <a href="tutor-upload.html">add DBS details</a></span>`}
+              </div>
+            </div>
+
+            <!-- Stripe Connect -->
+            ${status === "approved" ? `
+            <div class="col-12">
+              <div class="card p-4" style="${tutor.stripeAccountId ? "background:var(--primary-light);border-color:var(--primary)" : ""}">
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                  <div class="flex-grow-1">
+                    <h5 class="fw-700 mb-1"><i class="bi bi-bank me-2 text-primary"></i>Bank Account for Payouts</h5>
+                    ${tutor.stripeAccountId
+                      ? `<p class="small text-muted mb-0"><i class="bi bi-check-circle-fill text-success me-1"></i>Stripe account connected. You'll receive payouts automatically 72 hours after each student intro fee is paid.</p>`
+                      : `<p class="small text-muted mb-0">Connect your bank account via Stripe so you can receive payouts when students pay the introduction fee.</p>`}
+                  </div>
+                  ${tutor.stripeAccountId
+                    ? `<span class="badge bg-success px-3 py-2"><i class="bi bi-bank me-1"></i>Connected</span>`
+                    : `<button id="stripe-connect-btn" class="btn btn-primary flex-shrink-0" onclick="connectStripe('${tutor.id}')">
+                        <i class="bi bi-bank me-2"></i>Connect Bank Account
+                      </button>`}
+                </div>
+              </div>
+            </div>` : ""}
+
+            <!-- Quick actions -->
+            <div class="col-12">
+              <div class="card p-4">
+                <h5 class="fw-700 mb-3"><i class="bi bi-lightning-charge me-2 text-primary"></i>Quick Actions</h5>
+                <div class="d-flex flex-wrap gap-2">
+                  <a href="tutor-upload.html"   class="btn btn-outline-primary"><i class="bi bi-cloud-upload me-2"></i>Upload Documents</a>
+                  ${status === "approved" ? `<a href="tutor-profile.html?id=${tutor.id}" class="btn btn-outline-primary"><i class="bi bi-person-badge me-2"></i>View My Profile</a>` : ""}
+                  <a href="browse-tutors.html"  class="btn btn-outline-secondary"><i class="bi bi-people me-2"></i>Browse Tutors</a>
+                  <a href="contact.html"         class="btn btn-outline-secondary"><i class="bi bi-envelope me-2"></i>Contact Admin</a>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // Handle Stripe Connect onboarding return
+  (function() {
+    const sp = new URLSearchParams(window.location.search);
+    if (sp.get("stripe") === "complete") {
+      const banner = document.createElement("div");
+      banner.className = "alert alert-success alert-dismissible fade show m-3";
+      banner.innerHTML = '<i class="bi bi-bank me-2"></i><strong>Bank account connected!</strong> Your Stripe account is being verified. Payouts will be enabled once Stripe confirms your details. <button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+      document.getElementById("dash-root").prepend(banner);
+      history.replaceState({}, "", window.location.pathname);
+    } else if (sp.get("stripe") === "refresh") {
+      const banner = document.createElement("div");
+      banner.className = "alert alert-warning alert-dismissible fade show m-3";
+      banner.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>Stripe onboarding was not completed. Please try connecting your bank account again. <button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+      document.getElementById("dash-root").prepend(banner);
+      history.replaceState({}, "", window.location.pathname);
+    }
+  })();
+
+  window.connectStripe = async function(applicationId) {
+    const btn = document.getElementById("stripe-connect-btn");
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Opening Stripe…'; }
+    try {
+      const result = await getStripeOnboardingLink(applicationId);
+      if (result.url) {
+        window.location.href = result.url;
+      } else {
+        alert("Could not start Stripe onboarding: " + (result.error || "Unknown error"));
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-bank me-2"></i>Connect Bank Account'; }
+      }
+    } catch (err) {
+      alert("Failed to connect Stripe. Please try again.");
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-bank me-2"></i>Connect Bank Account'; }
+    }
+  };
+
+  onAuthStateChanged(auth, async user => {
+    if (!user) {
+      root.innerHTML = `
+        <div class="row justify-content-center">
+          <div class="col-lg-5 text-center py-5">
+            <i class="bi bi-lock fs-1 d-block mb-3 text-muted opacity-25"></i>
+            <h4 class="fw-700 mb-2">Sign in required</h4>
+            <p class="text-muted mb-4">Please sign in to your tutor account to view your dashboard.</p>
+            <a href="login.html" class="btn btn-primary">Sign In</a>
+          </div>
+        </div>`;
+      return;
+    }
+
+    const dn   = user.displayName || "";
+    const role = dn.split(":")[0];
+    if (role !== "tutor") {
+      root.innerHTML = `
+        <div class="row justify-content-center">
+          <div class="col-lg-5 text-center py-5">
+            <i class="bi bi-person-x fs-1 d-block mb-3 text-muted opacity-25"></i>
+            <h4 class="fw-700 mb-2">Tutor account required</h4>
+            <p class="text-muted mb-4">This dashboard is only for registered tutors.</p>
+            <a href="student-dashboard.html" class="btn btn-primary">Go to Student Dashboard</a>
+          </div>
+        </div>`;
+      return;
+    }
+
+    try {
+      const [tutor, cats] = await Promise.all([
+        getTutorByUid(user.uid),
+        getUploadCategories()
+      ]);
+
+      if (!tutor) {
+        root.innerHTML = `
+          <div class="alert alert-warning">
+            <strong>Application not found.</strong> If you just registered, please allow a few minutes and refresh this page.
+          </div>`;
+        return;
+      }
+
+      render(tutor, cats || []);
+    } catch (err) {
+      root.innerHTML = `<div class="alert alert-danger">Failed to load dashboard. Please refresh the page.</div>`;
+    }
+  });
+</script>
 <script type="module" src="js/navbar.js"></script>
 <script src="js/theme.js"></script>
 </body>

@@ -100,6 +100,77 @@ export async function getTutorByUid(uid) {
   return Array.isArray(results) && results.length > 0 ? results[0] : null;
 }
 
+export async function getTutorById(id) {
+  try {
+    const url  = SHEETS_URL + "?" + new URLSearchParams({ action: "get_tutor_by_id", id }).toString();
+    const res  = await fetch(url);
+    const data = await res.json();
+    return data || null;
+  } catch (e) {
+    console.warn("getTutorById failed:", e);
+    return null;
+  }
+}
+
+/* ── DBS Update Service ── */
+
+/**
+ * Tutor-initiated: saves DBS certificate details to the Applications sheet.
+ * @param {string} id   Applications row id
+ * @param {Object} fields { dbsCertificateNumber, dbsUpdateServiceId, dbsIssuedDate }
+ */
+export async function updateDbsDetails(id, fields) {
+  try {
+    const url = SHEETS_URL + "?" + new URLSearchParams({
+      action: "update_dbs_details", id, ...fields
+    }).toString();
+    const res  = await fetch(url);
+    return await res.json();
+  } catch (e) {
+    console.warn("updateDbsDetails failed:", e);
+    return { ok: false, error: "Network error" };
+  }
+}
+
+/**
+ * Admin-only: sets the dbsVerificationStatus on an Applications row.
+ * @param {string} id                  Applications row id
+ * @param {string} dbsVerificationStatus  'Verified' | 'Failed' | 'Unverified'
+ * @param {string} dbsVerifiedBy       Admin identifier
+ */
+export async function updateDbsVerification(id, dbsVerificationStatus, dbsVerifiedBy) {
+  try {
+    const url = SHEETS_URL + "?" + new URLSearchParams({
+      action: "update_dbs_verification", id, dbsVerificationStatus, dbsVerifiedBy: dbsVerifiedBy || "admin"
+    }).toString();
+    const res  = await fetch(url);
+    return await res.json();
+  } catch (e) {
+    console.warn("updateDbsVerification failed:", e);
+    return { ok: false, error: "Network error" };
+  }
+}
+
+/* ── Stripe Payment ── */
+
+export async function initiatePayment(requestId) {
+  const res = await fetch("/api/create-checkout", {
+    method:  "POST",
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify({ requestId })
+  });
+  return await res.json(); // { url } or { error }
+}
+
+export async function getStripeOnboardingLink(applicationId) {
+  const res = await fetch("/api/create-connect-onboarding", {
+    method:  "POST",
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify({ applicationId })
+  });
+  return await res.json(); // { url } or { error }
+}
+
 /* ── Student Requests ── */
 export async function saveStudentRequest(uid, data) {
   const id = genId();

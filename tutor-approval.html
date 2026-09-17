@@ -140,7 +140,8 @@
   import {
     auth, onAuthStateChanged, ADMIN_EMAIL,
     getTutorApplications, updateApplicationStatus,
-    updateTutorField, deleteTutorApplication
+    updateTutorField, deleteTutorApplication,
+    updateDbsVerification
   } from "./js/firebase.js";
 
   let allApps = [];
@@ -321,10 +322,71 @@
         <div class="small">${app.availability}</div>
       </div>` : ""}
 
+      <!-- Rates -->
+      ${(parseInt(app.rateKS3)||parseInt(app.rateGCSE)||parseInt(app.rateALevel)||parseInt(app.rateUniversity)||parseInt(app.rateAdult)) ? `
+      <div class="mb-3">
+        <div class="small text-muted mb-1">Hourly Rates</div>
+        <div class="d-flex flex-wrap gap-2 small">
+          ${parseInt(app.rateKS3)    ? `<span class="badge bg-light text-dark border">KS3 £${app.rateKS3}/hr</span>`         : ''}
+          ${parseInt(app.rateGCSE)   ? `<span class="badge bg-light text-dark border">GCSE £${app.rateGCSE}/hr</span>`        : ''}
+          ${parseInt(app.rateALevel) ? `<span class="badge bg-light text-dark border">A-Level £${app.rateALevel}/hr</span>`   : ''}
+          ${parseInt(app.rateUniversity) ? `<span class="badge bg-light text-dark border">University £${app.rateUniversity}/hr</span>` : ''}
+          ${parseInt(app.rateAdult)  ? `<span class="badge bg-light text-dark border">Adult £${app.rateAdult}/hr</span>`      : ''}
+        </div>
+      </div>` : ''}
+
+      <hr class="my-3" />
+
+      <!-- DBS Update Service -->
+      <h6 class="fw-700 mb-3"><i class="bi bi-shield-check me-2 text-info"></i>DBS Update Service</h6>
+      ${(app.dbsCertificateNumber || app.dbsUpdateServiceId) ? `
+      <div class="row g-2 mb-3 small">
+        <div class="col-sm-4">
+          <div class="text-muted mb-1">Certificate No.</div>
+          <div class="fw-600">${app.dbsCertificateNumber || '—'}</div>
+        </div>
+        <div class="col-sm-4">
+          <div class="text-muted mb-1">Update Service ID</div>
+          <div class="fw-600">${app.dbsUpdateServiceId || '—'}</div>
+        </div>
+        <div class="col-sm-4">
+          <div class="text-muted mb-1">Issue Date</div>
+          <div class="fw-600">${app.dbsIssuedDate || '—'}</div>
+        </div>
+      </div>
+      <div class="mb-3">
+        <a href="https://www.gov.uk/dbs-update-service" target="_blank" rel="noopener" class="btn btn-outline-info btn-sm">
+          <i class="bi bi-box-arrow-up-right me-1"></i>Check on DBS Update Service website
+        </a>
+        <div class="form-text mt-1">Open the link above, search using the tutor's surname, DOB, certificate number, and Update Service ID.</div>
+      </div>
+      <div class="d-flex align-items-center gap-3 mb-3">
+        <div>
+          <div class="small text-muted mb-1">Current DBS Verification Status</div>
+          ${app.dbsVerificationStatus === 'Verified'
+            ? '<span class="badge bg-success"><i class="bi bi-shield-fill-check me-1"></i>Verified</span>'
+            : app.dbsVerificationStatus === 'Failed'
+            ? '<span class="badge bg-danger"><i class="bi bi-shield-fill-x me-1"></i>Failed</span>'
+            : app.dbsVerificationStatus === 'Unverified'
+            ? '<span class="badge bg-warning text-dark"><i class="bi bi-shield-exclamation me-1"></i>Unverified (pending check)</span>'
+            : '<span class="badge bg-secondary">Not provided</span>'}
+          ${app.dbsVerifiedAt ? `<div class="small text-muted mt-1">Verified ${new Date(app.dbsVerifiedAt).toLocaleDateString('en-GB')} by ${app.dbsVerifiedBy||'admin'}</div>` : ''}
+        </div>
+        <div class="ms-auto d-flex gap-2 align-items-center">
+          <select class="form-select form-select-sm" id="modal-dbs-status-select" style="width:auto">
+            <option value="Unverified" ${app.dbsVerificationStatus==='Unverified'?'selected':''}>Unverified</option>
+            <option value="Verified"   ${app.dbsVerificationStatus==='Verified'  ?'selected':''}>Verified</option>
+            <option value="Failed"     ${app.dbsVerificationStatus==='Failed'    ?'selected':''}>Failed</option>
+          </select>
+          <button class="btn btn-info btn-sm text-white" onclick="applyDbsStatus('${app.id}')">Apply</button>
+        </div>
+      </div>` : `
+      <p class="text-muted small mb-3">This tutor has not provided DBS Update Service details.</p>`}
+
       <hr class="my-3" />
 
       <!-- Admin Controls -->
-      <h6 class="fw-700 mb-3"><i class="bi bi-shield-check me-2 text-primary"></i>Admin Controls</h6>
+      <h6 class="fw-700 mb-3"><i class="bi bi-gear me-2 text-primary"></i>Admin Controls</h6>
 
       <div class="row g-3">
         <div class="col-sm-6">
@@ -353,10 +415,26 @@
 
   window.applyModalStatus = async function(id) {
     const status = document.getElementById("modal-status-select").value;
-    const btn = document.querySelector("#tutorModal .modal-footer .btn-secondary");
     await updateApplicationStatus(id, status);
     bootstrap.Modal.getInstance(document.getElementById("tutorModal"))?.hide();
     loadApplications();
+  };
+
+  window.applyDbsStatus = async function(id) {
+    const sel = document.getElementById("modal-dbs-status-select");
+    if (!sel) return;
+    const status = sel.value;
+    const user = auth.currentUser;
+    const byEmail = user ? user.email : "admin";
+    sel.disabled = true;
+    const res = await updateDbsVerification(id, status, byEmail);
+    sel.disabled = false;
+    if (res && res.ok) {
+      bootstrap.Modal.getInstance(document.getElementById("tutorModal"))?.hide();
+      loadApplications();
+    } else {
+      alert("Failed to update DBS status. Please try again.");
+    }
   };
 
   window.confirmDelete = function(id, uid, name) {
