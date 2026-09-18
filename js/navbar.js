@@ -18,20 +18,26 @@ function buildNav(user) {
   const cur   = currentPage();
   const links = NAV_LINKS.map(p =>
     `<li class="nav-item"><a class="nav-link${cur === p.href ? " active" : ""}" href="${p.href}">${p.label}</a></li>`
-  ).join("") +
-  `<li class="nav-item"><a class="nav-link text-muted" href="login.html" style="font-size:.85rem">Sign In</a></li>`;
+  ).join("");
 
   let authHtml;
+
   if (user) {
-    const dn      = user.displayName || "";
-    const isAdmin = user.email === ADMIN_EMAIL;
-    const isTutor = dn.startsWith("tutor:");
-    const name    = dn.replace(/^(tutor|student):/, "") || user.email.split("@")[0];
-    const initial = name.charAt(0).toUpperCase();
-    const dashUrl = isAdmin ? "admin-dashboard.html" : isTutor ? "tutor-dashboard.html" : "student-dashboard.html";
-    const dashLbl = isAdmin ? "Admin Dashboard" : "My Dashboard";
+    const dn       = user.displayName || "";
+    const isAdmin  = user.email === ADMIN_EMAIL;
+    const isTutor  = dn.startsWith("tutor:");
+    const isStudent = dn.startsWith("student:");
+    const name     = dn.replace(/^(tutor|student):/, "") || user.email.split("@")[0];
+    const initial  = name.charAt(0).toUpperCase();
+    const dashUrl  = isAdmin ? "admin-dashboard.html" : isTutor ? "tutor-dashboard.html" : "student-dashboard.html";
+    const dashLbl  = isAdmin ? "Admin Dashboard" : "My Dashboard";
+
+    const becomeTutorLink = isStudent
+      ? `<a href="tutor-register.html" class="text-muted small me-1" style="white-space:nowrap;text-decoration:none;opacity:.75">Become a Tutor</a>`
+      : "";
 
     authHtml = `
+      ${becomeTutorLink}
       <div class="dropdown">
         <button class="btn btn-outline-primary btn-sm dropdown-toggle d-flex align-items-center gap-2"
                 type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -44,7 +50,8 @@ function buildNav(user) {
           <li><span class="dropdown-item-text small text-muted pb-1">${user.email}</span></li>
           <li><hr class="dropdown-divider my-1"></li>
           <li><a class="dropdown-item" href="${dashUrl}"><i class="bi bi-grid me-2"></i>${dashLbl}</a></li>
-          ${isTutor ? `<li><a class="dropdown-item" href="tutor-upload.html"><i class="bi bi-cloud-upload me-2"></i>Upload Documents</a></li>` : ""}
+          ${isStudent ? `<li><a class="dropdown-item" href="student-settings.html"><i class="bi bi-gear me-2"></i>Settings</a></li>` : ""}
+          ${isTutor  ? `<li><a class="dropdown-item" href="tutor-upload.html"><i class="bi bi-cloud-upload me-2"></i>Upload Documents</a></li>` : ""}
           <li><a class="dropdown-item text-danger" href="#" id="nav-signout-btn">
             <i class="bi bi-box-arrow-right me-2"></i>Sign Out
           </a></li>
@@ -52,8 +59,9 @@ function buildNav(user) {
       </div>`;
   } else {
     authHtml = `
-      <a href="student-register.html" class="btn btn-outline-primary btn-sm"><i class="bi bi-mortarboard me-1"></i>Student</a>
-      <a href="tutor-register.html" class="btn btn-primary btn-sm"><i class="bi bi-person-workspace me-1"></i>Tutor</a>`;
+      <a href="tutor-register.html" class="text-muted small me-1" style="white-space:nowrap;text-decoration:none;opacity:.75">Become a Tutor</a>
+      <a href="login.html" class="btn btn-outline-primary btn-sm">Sign In</a>
+      <a href="student-register.html" class="btn btn-primary btn-sm">Get Started</a>`;
   }
 
   nav.innerHTML = `

@@ -431,6 +431,12 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+<script type="module">
+  import { auth, onAuthStateChanged, ADMIN_EMAIL } from "./js/firebase.js";
+  onAuthStateChanged(auth, user => {
+    if (!user || user.email !== ADMIN_EMAIL) window.location.href = "login.html";
+  });
+</script>
 <script>
 // ---- Subject filter pills ----
 document.querySelectorAll('[data-filter="subject"]').forEach(btn => {

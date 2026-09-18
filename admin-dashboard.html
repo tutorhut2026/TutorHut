@@ -146,7 +146,7 @@
   import { auth, onAuthStateChanged, ADMIN_EMAIL, getTutorApplications, getAllConnections } from "./js/firebase.js";
 
   onAuthStateChanged(auth, async (user) => {
-    if (!user || user.email !== ADMIN_EMAIL) return;
+    if (!user || user.email !== ADMIN_EMAIL) { window.location.href = "login.html"; return; }
 
     const [apps, conns] = await Promise.all([getTutorApplications(), getAllConnections()]);
 
